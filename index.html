@@ -642,7 +642,7 @@ tr.row-pago td{opacity:.75}
 <div id="mob">
   <div class="mob-header">
     <div class="mob-logo">
-      <img id="mob-logo-img" style="height:28px;width:auto;display:block">
+      <img id="mob-logo-img" style="height:28px;width:auto;display:block;filter:brightness(0) invert(1)">
     </div>
     <span id="mob-title" style="font-size:13px;font-weight:600;opacity:.7">Dashboard</span>
   </div>
@@ -755,7 +755,7 @@ var ORIGENS_ENTRADA=["Cliente", "RT"];
 var MES_NUM={'Janeiro':1,'Fevereiro':2,'Março':3,'Abril':4,'Maio':5,'Junho':6,'Julho':7,'Agosto':8,'Setembro':9,'Outubro':10,'Novembro':11,'Dezembro':12};
 function getMesNum(r){var m=r.Mês;if(!m)return 0;if(typeof m==='number')return m;return MES_NUM[m]||parseInt(m)||0;}
 var dashMode='mes_atual',dashAno='',dashFrom='',dashTo='',dashUltPage=1;
-var mobDashMode='mes_atual';
+var mobDashMode='mes_atual',mobDashFrom='',mobDashTo='';
 var dType='entrada',mType='entrada';
 var dOrigE='',dOrigS='',mOrigE='',mOrigS='';
 var dNF='Não',mNF='Não';
@@ -1544,6 +1544,7 @@ function getMobDashData(){
   if(mobDashMode==='mes_ant')return dados.filter(function(r){return(r.Data||'').slice(0,7)===ma;});
   if(mobDashMode==='ult3'){var d3=new Date();d3.setMonth(d3.getMonth()-3);var s3=d3.toISOString().slice(0,7);return dados.filter(function(r){return(r.Data||'').slice(0,7)>=s3;});}
   if(mobDashMode==='ano'){var ay=new Date().getFullYear().toString();return dados.filter(function(r){return(r.Data||'').startsWith(ay);});}
+  if(mobDashMode==='custom'){return dados.filter(function(r){var d=r.Data||'';if(mobDashFrom&&d<mobDashFrom)return false;if(mobDashTo&&d>mobDashTo)return false;return true;});}
   return dados;
 }
 function rendMobDash(){
@@ -1565,7 +1566,9 @@ function rendMobDash(){
     +'<option value="ult3"'+(mobDashMode==='ult3'?' selected':'')+'>Últimos 3 Meses</option>'
     +'<option value="ano"'+(mobDashMode==='ano'?' selected':'')+'>Ano Atual</option>'
     +'<option value="todo"'+(mobDashMode==='todo'?' selected':'')+'>Todo o Período</option>'
+    +'<option value="custom"'+(mobDashMode==='custom'?' selected':'')+'>Personalizado</option>'
     +'</select></div>'
+    +(mobDashMode==='custom'?'<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><span style="font-size:11px;font-weight:700;color:#888">De:</span><input type="date" id="mob-dash-from" value="'+mobDashFrom+'" style="flex:1;border:1px solid #ddd;border-radius:6px;padding:5px 8px;font-size:13px" onchange="mobDashFrom=this.value;rendMobDash()"><span style="font-size:11px;font-weight:700;color:#888">Até:</span><input type="date" id="mob-dash-to" value="'+mobDashTo+'" style="flex:1;border:1px solid #ddd;border-radius:6px;padding:5px 8px;font-size:13px" onchange="mobDashTo=this.value;rendMobDash()"></div>':'')
     +'<div class="mob-kpi-row">'+mkpi('Saldo',fmt(sal),sal>=0?'#27ae60':'#c0392b')+mkpi('Clientes',fmt(cli),'#27ae60')+mkpi('RT',fmt(rt),'#2980b9')+mkpi('Despesa Total',fmt(sai),'#c0392b')+mkpi('Fut. Receber',fmt(futR),'#27ae60')+mkpi('Fut. Pagar',fmt(futP),'#c0392b')+mkpi('Receita Mês',fmt(eM),'#27ae60')+mkpi('Despesa Mês',fmt(sM),'#c0392b')+'</div><div style="font-size:10px;font-weight:700;letter-spacing:.6px;color:#888;margin-bottom:10px">ÚLTIMOS LANÇAMENTOS</div>';
   rec.forEach(function(r){
     var isE=r['Movimentação']==='Entrada';var ri=dados.indexOf(r);
