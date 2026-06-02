@@ -1158,17 +1158,34 @@ function rendChart(divId,legId,mov,dd){
   container.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'">'+h+'</svg>';
   if(R(legId))R(legId).innerHTML=activeYears.map(function(y){return '<div class="chart-leg-item"><div class="chart-leg-dot" style="background:'+colors[String(y)]+'"></div>'+y+'</div>';}).join('');
 }
-var hSortCol='Data',hSortDir=-1;
+var hSortCol='Data',hSortDir=-1,hFutFilt='';
 function setHSort(col){if(hSortCol===col){hSortDir*=-1;}else{hSortCol=col;hSortDir=(col==='Pago'||col==='NFem')?1:-1;}rendHist();}
+function setHFutFilt(v){
+  hFutFilt=(hFutFilt===v)?'':v;
+  ['receber','pagar'].forEach(function(k){
+    var btn=R('h-btn-'+k);
+    if(btn)btn.className='btn '+(hFutFilt===k?'btn-dark':'btn-out');
+  });
+  rendHist();
+}
 function getHFilt(){
   var q=(R('h-q')?R('h-q').value||'':'').toLowerCase();
   var mov=R('h-mov')?R('h-mov').value:'';
   var ano=R('h-ano')?R('h-ano').value:'';
   var mes=R('h-mes')?R('h-mes').value:'';
+  var td=today();
   return dados.filter(function(r){
-    if(mov&&r['Movimentação']!==mov)return false;
-    if(ano&&String(r.Ano)!==ano)return false;
-    if(mes&&String(getMesNum(r))!==mes)return false;
+    if(hFutFilt==='receber'){
+      if(r['Movimentação']!=='Entrada')return false;
+      if(!r.Data||r.Data<=td)return false;
+    } else if(hFutFilt==='pagar'){
+      if(r['Movimentação']!=='Saída')return false;
+      if(!r.Data||r.Data<=td)return false;
+    } else {
+      if(mov&&r['Movimentação']!==mov)return false;
+      if(ano&&String(r.Ano)!==ano)return false;
+      if(mes&&String(getMesNum(r))!==mes)return false;
+    }
     if(q&&JSON.stringify(r).toLowerCase().indexOf(q)<0)return false;
     return true;
   }).sort(function(a,b){
