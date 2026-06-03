@@ -676,9 +676,7 @@ tr.row-pago td{opacity:.75}
           <div style="flex:1">
             <div id="imp-resumo" style="font-size:13px;color:#666"></div>
           </div>
-          <div style="display:flex;gap:8px">
-            <button onclick="impAprovarTodos()" style="border:1.5px solid #2980b9;background:#fff;color:#2980b9;border-radius:9px;padding:7px 14px;font-size:13px;cursor:pointer;font-weight:600">✅ Aprovar pendentes</button>
-          </div>
+          <div></div>
         </div>
         <!-- Stats bar -->
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px" id="imp-stats"></div>
@@ -2443,53 +2441,90 @@ function impExtrairTransacoes(texto){
   impRenderLista();
 }
 
+// Detecta se um nome é pessoa física ou empresa
+function impEhPessoa(nome){
+  var n = nome.toUpperCase();
+  var corpWords = ['LTDA','ME ','S/A','S.A','EIRELI','EPP','BANCO','BANK','FINANCEIRA','SEGUROS',
+    'TECNOLOGIA','SOLUCOES','SOLUÇÕES','ASSESSORIA','CONSULTORIA','ENGENHARIA','CONSTRUTORA',
+    'COMERCIO','COMÉRCIO','SERVICOS','SERVIÇOS','INDUSTRIA','INDÚSTRIA','ATACADO','VAREJO',
+    'SUPERMERCADO','FARMACIA','FARMÁCIA','POSTO','PETROBRAS','DIGITAL','SYSTEM','SISTEMAS'];
+  if(corpWords.some(function(w){return n.indexOf(w)>=0;})) return false;
+  if(RT_EMPRESAS.some(function(e){var eu=e.toUpperCase();return n===eu||n.indexOf(eu)>=0||eu.indexOf(n)>=0;})) return false;
+  var words = nome.trim().split(/\s+/);
+  return words.length >= 2 && words.every(function(w){return /^[A-ZÁÉÍÓÚÃÕÇ]/.test(w);});
+}
+
+// Auto-detecta categoria para saídas
+function impDetectCategoria(desc){
+  var d = desc.toUpperCase();
+  if(/SIMPLES|DARF|DAE|GNRE|TRIBUT|ISS\b|INSS|FGTS|CAU\b|COFINS|\bPIS\b|DAS\b|IMPOSTO|TAXA/.test(d)) return 'Imposto';
+  if(/SALARIO|SALÁRIO|FOLHA|PRO.?LABORE|PROLAB|CLT|FUNCIONARIO|ARQUITETA|ARQUITETO|DESIGNER/.test(d)) return 'Pagamento de Folha';
+  if(/CONTABIL|MUTABILE|ESCRITORIO CONTAB/.test(d)) return 'Contabilidade';
+  if(/MARKETING|FOTO|FOTOG|DESIGN|SITE\b|HOSTMIDIA|DROPBOX|CELULAR|INSTAGRAM|META ADS|GOOGLE ADS/.test(d)) return 'Marketing';
+  if(RT_EMPRESAS.some(function(e){return d.indexOf(e.toUpperCase())>=0;})) return 'Fornecedores';
+  // Verifica DESP_MAP
+  var catEncontrada = null;
+  Object.keys(DESP_MAP).forEach(function(cat){
+    DESP_MAP[cat].forEach(function(desp){
+      if(d.indexOf(desp.toUpperCase())>=0) catEncontrada = cat;
+    });
+  });
+  return catEncontrada || 'Outros';
+}
+
 function impAplicarSugestoes(){
-  var todasRegras = IMP_REGRAS_FIXAS.concat(impRegras);
   impTxs.forEach(function(tx){
-    var descUp = (tx.descricao+' '+tx.descOriginal).toUpperCase();
+    if(tx.excluida) return;
+    var descUp = (tx.descricao+' '+(tx.descOriginal||'')).toUpperCase();
 
-    // 1. Regras (fixas + aprendidas)
-    var match = null;
-    var melhorConfianca = 0;
-    todasRegras.forEach(function(r){
-      if(descUp.indexOf(r.pattern.toUpperCase())>=0){
-        var conf = r.aprendida ? 95 : 85;
-        if(conf > melhorConfianca){
-          melhorConfianca = conf;
-          match = r;
-        }
+    if(tx.tipo==='Entrada'){
+      // Detecta pessoa ou empresa
+      if(impEhPessoa(tx.descricao)){
+        tx.origem = 'Cliente';
+        tx.cliente = tx.descricao;
+      } else {
+        tx.origem = 'RT';
+        tx.rt = tx.descricao;
+        // Tenta encontrar nome normalizado na lista RT
+        var rtMatch = RT_EMPRESAS.find(function(e){
+          return descUp.indexOf(e.toUpperCase())>=0 || e.toUpperCase().indexOf(descUp.substring(0,8))>=0;
+        });
+        if(rtMatch) tx.rt = rtMatch;
       }
-    });
-
-    // 2. Verificar no histórico do sistema
-    var histMatch = dados.filter(function(d){
-      var dDesc = (d.Descrição||d.Cliente||d.Despesa||'').toUpperCase();
-      return dDesc && dDesc.length>3 && descUp.indexOf(dDesc)>=0;
-    });
-    if(histMatch.length > 0){
-      var h = histMatch[histMatch.length-1];
-      if(!match || 98 > melhorConfianca){
-        match = {
-          classificacao:'Empresa',
-          origem: h.Origem||'',
-          tipo: h['Movimentação']||tx.tipo
-        };
-        melhorConfianca = 98;
+      // Verifica histórico
+      var histEnt = dados.filter(function(d){
+        if(d['Movimentação']!=='Entrada') return false;
+        var dDesc = (d.Cliente||d.RT||d.Descrição||'').toUpperCase();
+        return dDesc && dDesc.length>3 && descUp.indexOf(dDesc)>=0;
+      });
+      if(histEnt.length){
+        var h = histEnt[histEnt.length-1];
+        if(h.Origem) tx.origem = h.Origem;
+        if(h.Cliente) tx.cliente = h.Cliente;
+        if(h.RT) tx.rt = h.RT;
+      }
+    } else {
+      // Saída: detecta categoria e despesa
+      tx.categoria = impDetectCategoria(tx.descricao);
+      tx.despesa = tx.descricao;
+      // Tenta normalizar nome da despesa
+      var despMatch = DESPESAS.find(function(d){
+        return descUp.indexOf(d.toUpperCase())>=0 || d.toUpperCase().indexOf(descUp.substring(0,8))>=0;
+      });
+      if(despMatch) tx.despesa = despMatch;
+      // Verifica histórico
+      var histSai = dados.filter(function(d){
+        if(d['Movimentação']!=='Saída') return false;
+        var dDesc = (d.Despesa||d.Descrição||'').toUpperCase();
+        return dDesc && dDesc.length>3 && descUp.indexOf(dDesc)>=0;
+      });
+      if(histSai.length){
+        var hs = histSai[histSai.length-1];
+        if(hs.Origem) tx.categoria = hs.Origem;
+        if(hs.Despesa) tx.despesa = hs.Despesa;
       }
     }
-
-    if(match){
-      tx.classificacao = match.classificacao;
-      tx.origemSugerida = match.origem || '';
-      tx.confianca = melhorConfianca;
-      if(match.tipo && match.tipo !== tx.tipo) tx.tipo = match.tipo;
-    }
-
-    // 3. Sugerir origem padrão
-    if(tx.classificacao==='Empresa' && !tx.origemSugerida){
-      tx.origemSugerida = tx.tipo==='Entrada' ? 'Cliente' : '';
-    }
-    tx.origem = tx.origemSugerida;
+    if(!tx.nf) tx.nf = 'A Definir';
   });
 }
 
@@ -2506,67 +2541,47 @@ function impDeduplicar(){
   });
 }
 
-function impClassificar(i, val){
-  impTxs[i].classificacao = val;
-  impRenderLista();
-  impSalvarRegra(impTxs[i], val);
-}
-
-function impSetOrigem(i, val){
-  impTxs[i].origem = val;
-}
-
-function impSalvarRegra(tx, classificacao){
-  if(!tx.descricao || tx.descricao.length < 3) return;
-  var padrao = tx.descricao.toUpperCase().substring(0,30);
-  var existe = impRegras.some(function(r){ return r.pattern===padrao; });
-  if(!existe && (classificacao==='Empresa'||classificacao==='Pessoal')){
-    impRegras.push({pattern:padrao, classificacao:classificacao, origem:tx.origem||'', aprendida:true});
-    if(fbDb && fbAuth && fbAuth.currentUser){
-      fbDb.collection('ocapi').doc('regras_import').set({regras:impRegras}).catch(function(){});
-    }
-  }
-}
-
-function impFiltrar(f){
-  impFiltroAtual = f;
-  ['todos','pend','emp','pes'].forEach(function(k){ var b=R('imp-f-'+k); if(b){b.className='btn btn-out btn-sm';} });
-  var map={todos:'todos',pend:'?','Empresa':'emp','Pessoal':'pes'};
-  var btnId = 'imp-f-'+(map[f]||f);
-  if(R(btnId)) R(btnId).className='btn btn-dark btn-sm';
+function impExcluir(i){
+  impTxs[i].excluida = true;
   impRenderLista();
 }
+
+function impFiltrar(f){ impFiltroAtual=f; impRenderLista(); }
+function impFiltrarTab(f){ impFiltroAtual=f; impRenderLista(); }
 
 function impGetFiltrado(){
   var q = (R('imp-search')?R('imp-search').value||'':'').toLowerCase();
   return impTxs.map(function(t,i){return {t:t,i:i};}).filter(function(o){
     var t=o.t;
-    if(impFiltroAtual==='?' && t.classificacao!=='?') return false;
-    if(impFiltroAtual==='Empresa' && t.classificacao!=='Empresa') return false;
-    if(impFiltroAtual==='Pessoal' && t.classificacao!=='Pessoal') return false;
-    if(q && !t.descricao.toLowerCase().includes(q) && !String(t.valor).includes(q)) return false;
+    if(impFiltroAtual==='excluido') return !!t.excluida;
+    if(t.excluida) return false;
+    if(impFiltroAtual==='Entrada' && t.tipo!=='Entrada') return false;
+    if(impFiltroAtual==='Saída' && t.tipo!=='Saída') return false;
+    if(q){
+      var hay = (t.descricao+' '+(t.cliente||'')+(t.rt||'')+(t.despesa||'')+t.valor).toLowerCase();
+      if(hay.indexOf(q)<0) return false;
+    }
     return true;
   });
 }
 
 function impRenderLista(){
   var filtrado = impGetFiltrado();
-  var empresa = impTxs.filter(function(t){return t.classificacao==='Empresa';});
-  var pendente = impTxs.filter(function(t){return t.classificacao==='?';});
-  var totalValEmpresa = empresa.reduce(function(a,t){return a+(t.tipo==='Entrada'?t.valor:-t.valor);},0);
+  var totalAtivos = impTxs.filter(function(t){return !t.excluida;});
+  var nEnt = totalAtivos.filter(function(t){return t.tipo==='Entrada';}).length;
+  var nSai = totalAtivos.filter(function(t){return t.tipo==='Saída';}).length;
+  var nExcl = impTxs.filter(function(t){return t.excluida;}).length;
 
-  // Stats — KPI cards clicáveis como filtro
-  var pessoal = impTxs.filter(function(t){return t.classificacao==='Pessoal';});
-  var dupls = impTxs.filter(function(t){return t.duplicata;});
+  // Filtro tabs como KPI cards
   var statsEl = R('imp-stats');
   if(statsEl) statsEl.innerHTML = [
-    {f:'todos',  l:'Total',         v:impTxs.length,  c:'#f0f0f0', tc:'#333',    bc:'#ccc'},
-    {f:'Empresa',l:'✅ Empresa',     v:empresa.length, c:'#e8f8f0', tc:'#27ae60', bc:'#27ae60'},
-    {f:'Pessoal',l:'🏠 Pessoal',    v:pessoal.length, c:'#fdecea', tc:'#e74c3c', bc:'#e74c3c'},
-    {f:'?',      l:'⚠️ Pendente',   v:pendente.length,c:'#fff8e6', tc:'#e67e22', bc:'#e67e22'},
+    {f:'todos',   l:'Total',     v:totalAtivos.length, c:'#f0f0f0', tc:'#333',    bc:'#999'},
+    {f:'Entrada', l:'↑ Entradas',v:nEnt,               c:'#e8f8f0', tc:'#27ae60', bc:'#27ae60'},
+    {f:'Saída',   l:'↓ Saídas',  v:nSai,               c:'#fde8e8', tc:'#c0392b', bc:'#c0392b'},
+    {f:'excluido',l:'🗑️ Excluídos',v:nExcl,            c:'#f5f5f5', tc:'#aaa',    bc:'#ccc'},
   ].map(function(s){
     var ativo = impFiltroAtual===s.f;
-    return '<div onclick="impFiltrar(\''+s.f+'\')" style="cursor:pointer;background:'+s.c+';border-radius:10px;padding:12px;text-align:center;border:2px solid '+(ativo?s.bc:'transparent')+';box-shadow:'+(ativo?'0 0 0 2px '+s.bc+'33':'none')+';transition:all .15s">'
+    return '<div onclick="impFiltrarTab(\''+s.f+'\')" style="cursor:pointer;background:'+s.c+';border-radius:10px;padding:12px;text-align:center;border:2px solid '+(ativo?s.bc:'transparent')+';transition:all .15s">'
       +'<div style="font-size:20px;font-weight:800;color:'+s.tc+'">'+s.v+'</div>'
       +'<div style="font-size:11px;color:#888;margin-top:2px">'+s.l+'</div>'
     +'</div>';
@@ -2574,95 +2589,111 @@ function impRenderLista(){
 
   // Resumo
   var resEl = R('imp-resumo');
-  if(resEl) resEl.textContent = impTxs.length+' transações extraídas · '+pendente.length+' pendentes de classificação';
+  if(resEl) resEl.textContent = totalAtivos.length+' transações · '+nEnt+' entradas · '+nSai+' saídas'+(nExcl?' · '+nExcl+' excluídas':'');
 
   // Bottom bar
-  if(R('imp-count-bar')) R('imp-count-bar').textContent = empresa.length+' lançamentos para importar';
-  if(R('imp-val-bar')) R('imp-val-bar').textContent = fmt(totalValEmpresa)+' líquido';
+  var ativos = impTxs.filter(function(t){return !t.excluida;});
+  var valLiq = ativos.reduce(function(a,t){return a+(t.tipo==='Entrada'?t.valor:-t.valor);},0);
+  if(R('imp-count-bar')) R('imp-count-bar').textContent = ativos.length+' lançamentos para importar';
+  if(R('imp-val-bar')) R('imp-val-bar').textContent = fmt(Math.abs(valLiq))+' líquido'+(valLiq>=0?' (saldo positivo)':' (saldo negativo)');
 
   var lista = R('imp-lista');
   if(!lista) return;
   if(!filtrado.length){lista.innerHTML='<div style="text-align:center;padding:40px;color:#bbb">Nenhum lançamento encontrado</div>';return;}
 
-  var sel = function(opts,cur,attr){return '<select '+attr+'>'+opts.map(function(o){return '<option value="'+o+'"'+(o===cur?' selected':'')+'>'+o+'</option>';}).join('')+'</select>';};
-  var inp = function(val,attr){return '<input type="text" value="'+val+'" '+attr+'>';};
-  var chk = function(checked,attr){return '<input type="checkbox"'+(checked?' checked':'')+' '+attr+'>';};
-
   var ST = 'style="border:1px solid #e0e0e0;border-radius:6px;padding:3px 6px;font-size:11px;width:100%;background:#fafafa;color:#333"';
-  var TH = function(l){return '<th style="padding:8px 10px;font-size:11px;font-weight:700;color:#666;white-space:nowrap;border-bottom:2px solid #eee;text-align:left">'+l+'</th>';};
+  var TH = function(l,w){return '<th style="padding:8px 10px;font-size:11px;font-weight:700;color:#666;white-space:nowrap;border-bottom:2px solid #eee;text-align:left'+(w?';width:'+w:'')+'"">'+l+'</th>';};
+  var sel = function(opts,cur,attr){return '<select '+attr+'>'+opts.map(function(o){return '<option value="'+o+'"'+(o===cur?' selected':'')+'>'+o+'</option>';}).join('')+'</select>';};
+  var nfSel = function(i,cur){return sel(['A Definir','Não','Sim'],cur||'A Definir','onchange="impUpdField('+i+',\'nf\',this.value)" '+ST);};
+
+  // Modo: 'Entrada', 'Saída', ou 'todos'
+  var modo = impFiltroAtual; // 'Entrada', 'Saída', 'todos', 'excluido'
+  var showEnt = modo==='Entrada'||modo==='todos';
+  var showSai = modo==='Saída'||modo==='todos';
+  var showTipo = modo==='todos'||modo==='excluido';
 
   var rows = filtrado.map(function(o){
     var t=o.t, i=o.i;
-    var isEmp = t.classificacao==='Empresa';
-    var isPes = t.classificacao==='Pessoal';
-    var isIgn = t.classificacao==='Ignorar' || t.duplicata;
-    var isPend = t.classificacao==='?';
-
-    var bgRow = isEmp?'#fff': isPes?'#fff8f8': isIgn?'#f8f8f8': '#fffdf0';
-    var opRow = isIgn ? '0.5' : '1';
-    var leftClr = isEmp?'#27ae60': isPes?'#e74c3c': isPend?'#f39c12': '#ccc';
-
-    var dataFmt = t.data.split('-').reverse().join('/');
-    var valStr = String(t.valor).replace('.',',');
-
-    // Dropdowns condicionais
-    var origemOpts = (t.tipo==='Entrada'?ORIGENS_ENTRADA:ORIGENS_SAIDA);
-    var origemSel = sel([''].concat(origemOpts), t.origem||'', 'onchange="impUpdField('+i+',\'origem\',this.value);impRenderLista()" '+ST);
-
-    // Cliente (Entrada+Cliente)
-    var clienteCell = '';
-    if(t.tipo==='Entrada' && t.origem==='Cliente'){
-      clienteCell = sel([''].concat(CLI_HON), t.cliente||'', 'onchange="impUpdField('+i+',\'cliente\',this.value)" '+ST);
-    } else { clienteCell = '<span style="color:#ccc">—</span>'; }
-
-    // RT (Entrada+RT)
-    var rtCell = '';
-    if(t.tipo==='Entrada' && t.origem==='RT'){
-      rtCell = sel([''].concat(RT_EMPRESAS), t.rt||'', 'onchange="impUpdField('+i+',\'rt\',this.value)" '+ST);
-    } else { rtCell = '<span style="color:#ccc">—</span>'; }
-
-    // Despesa (Saída)
-    var despCell = '';
-    if(t.tipo==='Saída'){
-      var despOpts = t.origem && DESP_MAP[t.origem] ? DESP_MAP[t.origem] : DESPESAS;
-      despCell = sel([''].concat(despOpts), t.despesa||'', 'onchange="impUpdField('+i+',\'despesa\',this.value)" '+ST);
-    } else { despCell = '<span style="color:#ccc">—</span>'; }
-
-    // Tipo badge
     var tipoClr = t.tipo==='Entrada'?'#27ae60':'#c0392b';
     var tipoBg  = t.tipo==='Entrada'?'#e8f8f0':'#fde8e8';
+    var dataFmt = t.data.split('-').reverse().join('/');
+    var leftClr = t.tipo==='Entrada'?'#27ae60':'#c0392b';
+    var dupBadge = t.duplicata ? '<span style="font-size:9px;background:#f0f0f0;color:#999;border-radius:4px;padding:1px 5px;margin-left:4px">🔁 dup</span>' : '';
 
-    // Classificação mini-toggle
-    var cls = '<div style="display:flex;gap:3px">'
-      +'<button onclick="impClassificar('+i+',\'Empresa\')" title="Empresa" style="border:none;border-radius:5px;padding:3px 7px;font-size:10px;font-weight:700;cursor:pointer;background:'+(isEmp?'#27ae60':'#eee')+';color:'+(isEmp?'#fff':'#888')+'">E</button>'
-      +'<button onclick="impClassificar('+i+',\'Pessoal\')" title="Pessoal" style="border:none;border-radius:5px;padding:3px 7px;font-size:10px;font-weight:700;cursor:pointer;background:'+(isPes?'#e74c3c':'#eee')+';color:'+(isPes?'#fff':'#888')+'">P</button>'
-      +'</div>';
+    var TD = function(c,extra){return '<td style="padding:5px 8px;'+(extra||'')+'">'+c+'</td>';};
 
-    var dupBadge = t.duplicata ? ' <span style="font-size:9px;background:#f0f0f0;color:#999;border-radius:4px;padding:1px 5px">🔁</span>' : '';
-    var confBadge = t.confianca>0 ? ' <span style="font-size:9px;background:#e8f0ff;color:#2980b9;border-radius:4px;padding:1px 5px">'+t.confianca+'%</span>' : '';
+    // Célula ORIGEM (Entrada) = Cliente/RT dropdown
+    var origemEntCell = '';
+    if(t.tipo==='Entrada'){
+      origemEntCell = sel(['','Cliente','RT'], t.origem||'', 'onchange="impUpdField('+i+',\'origem\',this.value);impRenderLista()" '+ST);
+    }
 
-    return '<tr style="background:'+bgRow+';opacity:'+opRow+';border-left:3px solid '+leftClr+'">'
-      +'<td style="padding:6px 8px;white-space:nowrap;font-size:12px;color:#555">'+dataFmt+'</td>'
-      +'<td style="padding:6px 8px"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:'+tipoBg+';color:'+tipoClr+'">'+t.tipo+'</span></td>'
-      +'<td style="padding:6px 8px;min-width:110px">'+origemSel+'</td>'
-      +'<td style="padding:6px 8px;min-width:130px">'+clienteCell+'</td>'
-      +'<td style="padding:6px 8px;min-width:130px">'+rtCell+'</td>'
-      +'<td style="padding:6px 8px;min-width:130px">'+despCell+'</td>'
-      +'<td style="padding:6px 8px;font-size:12px;font-weight:700;color:'+tipoClr+';white-space:nowrap">'+fmt(t.valor)+'</td>'
-      +'<td style="padding:6px 8px;text-align:center">'+chk(t.pago||false,'onchange="impUpdField('+i+',\'pago\',this.checked)"')+'</td>'
-      +'<td style="padding:6px 8px;text-align:center">'+chk(t.nf||false,'onchange="impUpdField('+i+',\'nf\',this.checked)"')+'</td>'
-      +'<td style="padding:6px 8px;min-width:120px"><input type="text" value="'+(t.obs||'')+'" onchange="impUpdField('+i+',\'obs\',this.value)" placeholder="..." style="border:1px solid #e0e0e0;border-radius:6px;padding:3px 6px;font-size:11px;width:100%;background:#fafafa"></td>'
-      +'<td style="padding:6px 10px;white-space:nowrap"><div style="font-size:10px;color:#aaa;margin-bottom:3px">'+dupBadge+confBadge+'</div>'+cls+'</td>'
-    +'</tr>';
+    // Célula CLIENTE
+    var clienteCell = '';
+    if(t.tipo==='Entrada'){
+      if(t.origem==='Cliente'){
+        clienteCell = sel([''].concat(CLI_HON), t.cliente||'', 'onchange="impUpdField('+i+',\'cliente\',this.value)" '+ST);
+      } else if(t.origem==='RT'){
+        clienteCell = sel([''].concat(RT_EMPRESAS), t.rt||'', 'onchange="impUpdField('+i+',\'rt\',this.value)" '+ST);
+      } else {
+        clienteCell = '<span style="color:#ccc;font-size:11px">selecione origem</span>';
+      }
+    }
+
+    // Célula CATEGORIA (Saída)
+    var categoriaCell = '';
+    if(t.tipo==='Saída'){
+      categoriaCell = sel([''].concat(ORIGENS_SAIDA), t.categoria||'', 'onchange="impUpdField('+i+',\'categoria\',this.value);impRenderLista()" '+ST);
+    }
+
+    // Célula DESPESA (Saída)
+    var despesaCell = '';
+    if(t.tipo==='Saída'){
+      var despOpts = t.categoria && DESP_MAP[t.categoria] && DESP_MAP[t.categoria].length ? DESP_MAP[t.categoria] : DESPESAS;
+      // Permite valor livre também — se despesa atual não está na lista, inclui
+      var cur = t.despesa||'';
+      var opts = cur && despOpts.indexOf(cur)<0 ? [cur].concat(despOpts) : despOpts;
+      despesaCell = sel([''].concat(opts), cur, 'onchange="impUpdField('+i+',\'despesa\',this.value)" '+ST);
+    }
+
+    var obsCell = '<input type="text" value="'+(t.obs||'')+'" onchange="impUpdField('+i+',\'obs\',this.value)" placeholder="..." style="border:1px solid #e0e0e0;border-radius:6px;padding:3px 6px;font-size:11px;width:100%;min-width:100px;background:#fafafa">';
+    var excBtn = '<button onclick="impExcluir('+i+')" title="Excluir" style="border:none;background:transparent;cursor:pointer;font-size:14px;color:#e74c3c;padding:2px 6px">🗑️</button>';
+
+    var row = '<tr style="background:#fff;border-left:3px solid '+leftClr+';border-bottom:1px solid #f5f5f5">';
+    row += TD('<span style="font-size:12px;color:#555;white-space:nowrap">'+dataFmt+'</span>'+dupBadge);
+    if(showTipo) row += TD('<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:'+tipoBg+';color:'+tipoClr+'">'+t.tipo+'</span>');
+    if(showEnt && t.tipo==='Entrada'){
+      row += TD(origemEntCell,'min-width:90px');
+      row += TD(clienteCell,'min-width:160px');
+      if(showSai){ row += TD('<span style="color:#eee">—</span>'); row += TD('<span style="color:#eee">—</span>'); }
+    }
+    if(showSai && t.tipo==='Saída'){
+      if(showEnt){ row += TD('<span style="color:#eee">—</span>'); row += TD('<span style="color:#eee">—</span>'); }
+      row += TD(categoriaCell,'min-width:110px');
+      row += TD(despesaCell,'min-width:150px');
+    }
+    row += TD('<span style="font-size:12px;font-weight:700;color:'+tipoClr+';white-space:nowrap">'+fmt(t.valor)+'</span>','text-align:right');
+    row += TD(nfSel(i,t.nf),'min-width:90px');
+    row += TD(obsCell,'min-width:110px');
+    row += TD(excBtn,'text-align:center;width:36px');
+    row += '</tr>';
+    return row;
   }).join('');
 
+  // Cabeçalho dinâmico
+  var thead = '<tr style="background:#f8f8f8">';
+  thead += TH('DATA');
+  if(showTipo) thead += TH('TIPO');
+  if(showEnt){ thead += TH('ORIGEM','90px'); thead += TH('CLIENTE / RT'); }
+  if(showSai){ thead += TH('CATEGORIA','110px'); thead += TH('DESPESA'); }
+  thead += TH('VALOR'); thead += TH('NF','90px'); thead += TH('OBSERVAÇÕES'); thead += TH('');
+  thead += '</tr>';
+
   lista.innerHTML = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
-    +'<thead><tr style="background:#f8f8f8">'
-    +TH('DATA')+TH('TIPO')+TH('ORIGEM')+TH('CLIENTE')+TH('RT')+TH('DESPESA')+TH('VALOR')+TH('PAGO')+TH('NF')+TH('OBSERVAÇÕES')+TH('')
-    +'</tr></thead>'
+    +'<thead>'+thead+'</thead>'
     +'<tbody>'+rows+'</tbody>'
     +'</table></div>'
-    +'<div style="font-size:11px;color:#aaa;margin-top:6px;text-align:right">'+filtrado.length+' lançamentos exibidos · Clique <b>E</b>=Empresa <b>P</b>=Pessoal para classificar</div>';
+    +'<div style="font-size:11px;color:#aaa;margin-top:6px;text-align:right">'+filtrado.length+' lançamentos exibidos</div>';
 }
 
 function impUpdField(i, campo, val){
@@ -2680,15 +2711,12 @@ function impAprovarTodos(){
 }
 
 function impConfirmarImport(){
-  var empresa = impTxs.filter(function(t){return t.classificacao==='Empresa';});
-  if(!empresa.length){ showToast('Nenhum lançamento marcado como Empresa','#e67e22'); return; }
-  var pendentes = impTxs.filter(function(t){return t.classificacao==='?';}).length;
-  if(pendentes > 0){
-    if(!confirm(pendentes+' lançamentos ainda pendentes de classificação. Importar só os marcados como Empresa?')) return;
-  }
+  var paraImportar = impTxs.filter(function(t){return !t.excluida;});
+  if(!paraImportar.length){ showToast('Nenhum lançamento para importar','#e67e22'); return; }
+  if(!confirm(paraImportar.length+' lançamentos serão importados para o sistema. Continuar?')) return;
 
   var importados = 0, duplicados = 0;
-  empresa.forEach(function(tx){
+  paraImportar.forEach(function(tx){
     var dataFmt = tx.data.split('-').reverse().join('/');
     // Check duplicate by date+valor
     var dup = dados.some(function(d){ return d.Data===dataFmt && Math.abs((parseFloat(d.Valor)||0)-tx.valor)<0.01; });
@@ -2701,13 +2729,12 @@ function impConfirmarImport(){
       Descrição: tx.descricao,
       Valor: String(tx.valor).replace('.',','),
       Movimentação: tx.tipo,
-      Origem: tx.origem || (tx.tipo==='Entrada'?'Cliente':''),
+      Origem: tx.tipo==='Saída' ? (tx.categoria||'') : (tx.origem||'Cliente'),
       Cliente: tx.cliente || '',
       RT: tx.rt || '',
       Despesa: tx.despesa || '',
       Observações: tx.obs || '',
-      pago: tx.pago || false,
-      nf_emitida: tx.nf || false,
+      nf_emitida: tx.nf==='Sim',
       _ts: Date.now(),
       fonte_import: 'Extrato Banco Inter'
     };
