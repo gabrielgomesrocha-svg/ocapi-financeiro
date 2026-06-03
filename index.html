@@ -1698,7 +1698,7 @@ function clearHFilt(){
   rendHist();
 }
 function init(){
-  var anos=[...new Set(dados.map(function(r){return r.Ano;}).filter(Boolean))].sort(function(a,b){return b-a;});
+  var anos=[...new Set(dados.map(function(r){return r.Ano?String(r.Ano):null;}).filter(Boolean))].sort(function(a,b){return b-a;});
   if(anos.length&&!dashAno){dashAno=String(anos[0]);}
   if(R('dash-ano'))R('dash-ano').innerHTML=anos.map(function(a){return '<option value="'+a+'"'+(String(a)===dashAno?' selected':'')+'>'+a+'</option>';}).join('');
   // dashMode starts as 'mes_atual', ano-wrap stays hidden
