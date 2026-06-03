@@ -1069,6 +1069,24 @@ function rendTop5(dd){
     '</div>';
   }).join('');
 }
+function showChartTip(evt,html){
+  var t=document.getElementById('chart-tip');
+  if(!t){t=document.createElement('div');t.id='chart-tip';t.style.cssText='position:fixed;background:#1a1a1a;color:#fff;padding:8px 13px;border-radius:9px;font-size:12px;font-weight:600;pointer-events:none;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.3);line-height:1.7;white-space:nowrap;transition:opacity .1s';document.body.appendChild(t);}
+  // '|' separates month header from year lines
+  var parts=html.split('|');
+  if(parts.length>1){
+    t.innerHTML='<div style="color:#aaa;font-size:11px;margin-bottom:2px">'+parts[0]+'</div>'+parts.slice(1).join('<br>');
+  } else {
+    t.innerHTML=html;
+  }
+  t.style.opacity='1';
+  var x=evt.clientX,y=evt.clientY,tw=t.offsetWidth||160,th=t.offsetHeight||50;
+  var lx=x+14,ly=y-th-10;
+  if(lx+tw>window.innerWidth-10)lx=x-tw-14;
+  if(ly<10)ly=y+14;
+  t.style.left=lx+'px';t.style.top=ly+'px';
+}
+function hideChartTip(){var t=document.getElementById('chart-tip');if(t)t.style.opacity='0';}
 function rendChartResultado(divId,legId,dd){
   var container=R(divId);if(!container)return;
   var W=600,H=200,PL=70,PR=15,PT=12,PB=35,cW=W-PL-PR,cH=H-PT-PB;
@@ -1103,7 +1121,9 @@ function rendChartResultado(divId,legId,dd){
     var yTop=yScale(Math.max(v,0)),yBot=yScale(Math.min(v,0));
     var barH=Math.abs(yTop-yBot);if(barH<1)barH=1;
     var clr=v>=0?'#27ae60':'#c0392b';
-    h+='<rect x="'+(xC-barW/2).toFixed(1)+'" y="'+yTop.toFixed(1)+'" width="'+barW+'" height="'+barH.toFixed(1)+'" fill="'+clr+'" rx="2" opacity="0.85"/>';
+    var tip=labels[i]+': '+fmt(v);
+    h+='<rect x="'+(xC-barW/2).toFixed(1)+'" y="'+yTop.toFixed(1)+'" width="'+barW+'" height="'+barH.toFixed(1)+'" fill="'+clr+'" rx="2" opacity="0.85" style="cursor:pointer" onmouseover="showChartTip(event,\''+tip+'\')" onmouseout="hideChartTip()"/>';
+    h+='<rect x="'+(xC-cW/24).toFixed(1)+'" y="'+PT+'" width="'+(cW/12).toFixed(1)+'" height="'+cH+'" fill="transparent" onmouseover="showChartTip(event,\''+tip+'\')" onmouseout="hideChartTip()"/>';
     h+='<text x="'+xC.toFixed(1)+'" y="'+(PT+cH+18)+'" text-anchor="middle" font-size="10" fill="#aaa">'+labels[i]+'</text>';
   });
   container.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'">'+h+'</svg>';
@@ -1125,9 +1145,9 @@ function rendChartPizza(divId,legId,dd){
   var h='';var start=0;
   segs.forEach(function(seg){
     var angle=seg.v/total*2*Math.PI;
+    var tip=seg.l+': '+fmt(seg.v)+' ('+Math.round(seg.v/total*100)+'%)';
     if(angle>=2*Math.PI-0.0001){
-      // Full circle: SVG arc can't draw 360°, use two circles instead
-      h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R_out+'" fill="'+seg.c+'" opacity="0.9"/>';
+      h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R_out+'" fill="'+seg.c+'" opacity="0.9" style="cursor:pointer" onmouseover="showChartTip(event,\''+tip+'\')" onmouseout="hideChartTip()"/>';
       h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R_in+'" fill="#fff"/>';
     } else {
       var end=start+angle;
@@ -1136,7 +1156,7 @@ function rendChartPizza(divId,legId,dd){
       var ix1=cx+R_in*Math.sin(start),iy1=cy-R_in*Math.cos(start);
       var ix2=cx+R_in*Math.sin(end),iy2=cy-R_in*Math.cos(end);
       var large=angle>Math.PI?1:0;
-      h+='<path d="M'+ix1.toFixed(2)+','+iy1.toFixed(2)+' L'+x1.toFixed(2)+','+y1.toFixed(2)+' A'+R_out+','+R_out+' 0 '+large+',1 '+x2.toFixed(2)+','+y2.toFixed(2)+' L'+ix2.toFixed(2)+','+iy2.toFixed(2)+' A'+R_in+','+R_in+' 0 '+large+',0 '+ix1.toFixed(2)+','+iy1.toFixed(2)+' Z" fill="'+seg.c+'" opacity="0.9" stroke="#fff" stroke-width="2"/>';
+      h+='<path d="M'+ix1.toFixed(2)+','+iy1.toFixed(2)+' L'+x1.toFixed(2)+','+y1.toFixed(2)+' A'+R_out+','+R_out+' 0 '+large+',1 '+x2.toFixed(2)+','+y2.toFixed(2)+' L'+ix2.toFixed(2)+','+iy2.toFixed(2)+' A'+R_in+','+R_in+' 0 '+large+',0 '+ix1.toFixed(2)+','+iy1.toFixed(2)+' Z" fill="'+seg.c+'" opacity="0.9" stroke="#fff" stroke-width="2" style="cursor:pointer" onmouseover="showChartTip(event,\''+tip+'\')" onmouseout="hideChartTip()"/>';
       start=end;
     }
   });
@@ -1194,6 +1214,13 @@ function rendChartFluxo(divId,legId,dd){
     var clr=v>=0?'#2980b9':'#c0392b';
     h+='<circle cx="'+xS(i).toFixed(1)+'" cy="'+yS(v).toFixed(1)+'" r="4" fill="'+clr+'" stroke="#fff" stroke-width="1.5"/>';
   });
+  // hover strips
+  var stripW=cW/(months.length-1);
+  visiblePts.forEach(function(v,i){
+    var tip=labels[i]+': '+fmt(v);
+    var sx=(xS(i)-stripW/2);
+    h+='<rect x="'+sx.toFixed(1)+'" y="'+PT+'" width="'+stripW.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:crosshair" onmouseover="showChartTip(event,\''+tip+'\')" onmouseout="hideChartTip()"/>';
+  });
   container.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'">'+h+'</svg>';
   var last=visiblePts[visiblePts.length-1];
   var lastClr=last>=0?'#27ae60':'#c0392b';
@@ -1221,8 +1248,9 @@ function rendChartDespCat(divId,legId,dd){
   var h='';var start=0;
   main.forEach(function(seg){
     var angle=seg.v/total*2*Math.PI;
+    var tip=seg.l+': '+fmt(seg.v)+' ('+Math.round(seg.v/total*100)+'%)';
     if(angle>=2*Math.PI-0.0001){
-      h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R_out+'" fill="'+seg.c+'" opacity="0.9"/>';
+      h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R_out+'" fill="'+seg.c+'" opacity="0.9" style="cursor:pointer" onmouseover="showChartTip(event,\''+tip+'\')" onmouseout="hideChartTip()"/>';
       h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R_in+'" fill="#fff"/>';
     } else {
       var end=start+angle;
@@ -1231,7 +1259,7 @@ function rendChartDespCat(divId,legId,dd){
       var ix1=cx+R_in*Math.sin(start),iy1=cy-R_in*Math.cos(start);
       var ix2=cx+R_in*Math.sin(end),iy2=cy-R_in*Math.cos(end);
       var large=angle>Math.PI?1:0;
-      h+='<path d="M'+ix1.toFixed(2)+','+iy1.toFixed(2)+' L'+x1.toFixed(2)+','+y1.toFixed(2)+' A'+R_out+','+R_out+' 0 '+large+',1 '+x2.toFixed(2)+','+y2.toFixed(2)+' L'+ix2.toFixed(2)+','+iy2.toFixed(2)+' A'+R_in+','+R_in+' 0 '+large+',0 '+ix1.toFixed(2)+','+iy1.toFixed(2)+' Z" fill="'+seg.c+'" opacity="0.9" stroke="#fff" stroke-width="2"/>';
+      h+='<path d="M'+ix1.toFixed(2)+','+iy1.toFixed(2)+' L'+x1.toFixed(2)+','+y1.toFixed(2)+' A'+R_out+','+R_out+' 0 '+large+',1 '+x2.toFixed(2)+','+y2.toFixed(2)+' L'+ix2.toFixed(2)+','+iy2.toFixed(2)+' A'+R_in+','+R_in+' 0 '+large+',0 '+ix1.toFixed(2)+','+iy1.toFixed(2)+' Z" fill="'+seg.c+'" opacity="0.9" stroke="#fff" stroke-width="2" style="cursor:pointer" onmouseover="showChartTip(event,\''+tip+'\')" onmouseout="hideChartTip()"/>';
       start=end;
     }
   });
@@ -1275,6 +1303,15 @@ function rendChart(divId,legId,mov,dd){
     var pathD=pts.map(function(v,i){return(i===0?'M':'L')+xS(i).toFixed(1)+','+yS(v).toFixed(1);}).join(' ');
     h+='<path d="'+pathD+'" fill="none" stroke="'+colors[String(y)]+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
     pts.forEach(function(v,i){if(v>0)h+='<circle cx="'+xS(i).toFixed(1)+'" cy="'+yS(v).toFixed(1)+'" r="3.5" fill="'+colors[String(y)]+'" stroke="#fff" stroke-width="1.5"/>';});
+  });
+  // hover strips — show all active years on hover
+  var mLabels=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var stripW2=cW/11;
+  [0,1,2,3,4,5,6,7,8,9,10,11].forEach(function(i){
+    var lines=activeYears.map(function(y){return y+': '+fmt(series[y][i]);}).join('<br>');
+    var tip=mLabels[i]+'|'+activeYears.map(function(y){return y+': '+fmt(series[y][i]);}).join(' | ');
+    var sx=(xS(i)-stripW2/2);
+    h+='<rect x="'+sx.toFixed(1)+'" y="'+PT+'" width="'+stripW2.toFixed(1)+'" height="'+cH+'" fill="transparent" style="cursor:crosshair" onmouseover="showChartTip(event,\''+tip+'\')" onmouseout="hideChartTip()"/>';
   });
   container.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'">'+h+'</svg>';
   if(R(legId))R(legId).innerHTML=activeYears.map(function(y){return '<div class="chart-leg-item"><div class="chart-leg-dot" style="background:'+colors[String(y)]+'"></div>'+y+'</div>';}).join('');
