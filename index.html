@@ -2628,13 +2628,17 @@ function impRenderLista(){
       origemEntCell = sel(['','Cliente','RT'], t.origem||'', 'onchange="impUpdField('+i+',\'origem\',this.value);impRenderLista()" '+ST);
     }
 
-    // Célula CLIENTE
+    // Célula CLIENTE — inclui valor atual mesmo se não está na lista
     var clienteCell = '';
     if(t.tipo==='Entrada'){
       if(t.origem==='Cliente'){
-        clienteCell = sel([''].concat(CLI_HON), t.cliente||'', 'onchange="impUpdField('+i+',\'cliente\',this.value)" '+ST);
+        var cliCur = t.cliente||'';
+        var cliOpts = cliCur && CLI_HON.indexOf(cliCur)<0 ? [cliCur].concat(CLI_HON) : CLI_HON;
+        clienteCell = sel([''].concat(cliOpts), cliCur, 'onchange="impUpdField('+i+',\'cliente\',this.value)" '+ST);
       } else if(t.origem==='RT'){
-        clienteCell = sel([''].concat(RT_EMPRESAS), t.rt||'', 'onchange="impUpdField('+i+',\'rt\',this.value)" '+ST);
+        var rtCur = t.rt||'';
+        var rtOpts = rtCur && RT_EMPRESAS.indexOf(rtCur)<0 ? [rtCur].concat(RT_EMPRESAS) : RT_EMPRESAS;
+        clienteCell = sel([''].concat(rtOpts), rtCur, 'onchange="impUpdField('+i+',\'rt\',this.value)" '+ST);
       } else {
         clienteCell = '<span style="color:#ccc;font-size:11px">selecione origem</span>';
       }
@@ -2673,7 +2677,8 @@ function impRenderLista(){
       row += TD(despesaCell,'min-width:150px');
     }
     row += TD('<span style="font-size:12px;font-weight:700;color:'+tipoClr+';white-space:nowrap">'+fmt(t.valor)+'</span>','text-align:right');
-    row += TD(nfSel(i,t.nf),'min-width:90px');
+    // NF só em Entradas
+    if(modo!=='Saída') row += TD(nfSel(i,t.nf),'min-width:90px');
     row += TD(obsCell,'min-width:110px');
     row += TD(excBtn,'text-align:center;width:36px');
     row += '</tr>';
@@ -2684,9 +2689,11 @@ function impRenderLista(){
   var thead = '<tr style="background:#f8f8f8">';
   thead += TH('DATA');
   if(showTipo) thead += TH('TIPO');
-  if(showEnt){ thead += TH('ORIGEM','90px'); thead += TH('CLIENTE / RT'); }
+  if(showEnt){ thead += TH('ORIGEM','90px'); thead += TH('NOME NO EXTRATO'); }
   if(showSai){ thead += TH('CATEGORIA','110px'); thead += TH('DESPESA'); }
-  thead += TH('VALOR'); thead += TH('NF','90px'); thead += TH('OBSERVAÇÕES'); thead += TH('');
+  thead += TH('VALOR');
+  if(modo!=='Saída') thead += TH('NF','90px');
+  thead += TH('OBSERVAÇÕES'); thead += TH('');
   thead += '</tr>';
 
   lista.innerHTML = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
