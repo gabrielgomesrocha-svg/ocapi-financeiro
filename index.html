@@ -756,7 +756,7 @@ function salvarFirebase(){
 }
 var CLI_HON=["Aelson e Conceição", "Aguinado e Magda", "Aguinaldo e Magda", "Amália e Emerson", "Ana Carolina Fonseca", "Ana Luiza e Eduardo", "Ana Paula e André", "Beatriz e Bernardo", "Brenda Souza", "Bruna e Leonardo", "Bárbara Feitosa Kumon", "Camila Gomes", "Carmen e José", "Christiane e Lucas", "Condomínio Edifício Arantes", "Condomínio Edifício Maria Flávia", "Cynthia e Ramon", "Daniela e Daniel", "Daniela e Guilherme", "Danielle e Marcelo", "Edifício Antares", "Edifício Maria Flávia", "Edifício Mônica Salles", "Edifício Riviera", "Edifício Teófilo de Melo", "Eduardo e Terezinha", "Elaine Fernandes", "Flora e Bruno", "Fábio Barreto", "Fátima", "Fátima e Ricardo", "Humberto e Regina", "Iara e Guilherme", "Isabela e Rafael", "Isabella e Humberto", "Joana e Rafael", "Juliana e Daniel", "Juliana e Máximo", "Junia e Neusa", "Kamylla e Felipe", "Kellen", "Kelly e José Carlos", "Letícia e Marcelo", "Logás", "Logás Sede Unicenter", "Lorena Lustosa", "Luana Cordeiro", "Luciana Moreira", "Maisa e Wander", "Manuela e Arthur", "Marcinha e Eduardo", "Maria Silvia Gonzaga", "Mariana e Gustavo", "Marilene Carneiro", "Marina e Daniel", "Marina e Marcelo", "Marina e Rodrigo", "Paula e Rodrigo", "Pedro Bartolomeu Mesa", "Pedro e Aline", "Pedro e Chris", "Pedro e Iara", "Renata e Rafael", "Shirley Emerick", "Sítio Pequeno Bosque", "Terezinha Magalhães", "Thiago Portes", "Tânia Carvalho", "Vanessa e Mario Pedro"];
 var RT_EMPRESAS=["A de Arte", "ABC da Construção Lagoa Santa", "Aba Vasos", "Abtah", "Adalberto Eletricista", "Alexandre Lima Fine Art", "Amém Casa", "América Móveis", "Artefato Marcenaria", "Atelier Cortinas e Persianas", "Atelier do Mármore", "Ateliê Cortinas e Persianas", "Atellier do Mármore Romildo", "Bellar", "Belíssimo Valvee", "Bontempo", "Botteh", "Cama House", "Casa Mastria", "Casadorada", "Conceito Requinte", "Cookeletroraro", "Cortinas Mangabeiras", "Decorar.it", "Directa", "Divinal Vidros", "Estofados Odilon", "FORNECEDOR", "Fast Shop", "Fernando Divinal", "Galeria Murilo Castro", "Gallery", "Garden Piscinas", "Gayatri", "Gayatri Interiores", "Hall Decor", "Henrique Murta", "Iluminar", "In8 Home", "Infinito Vidros", "Innovar", "JL Esquadrias", "João Móveis", "João Águia Móveis", "Kinder Design", "Letícia Almeida", "Lidea", "Lider Interiores", "Luciana Estofados", "Ludi Móveis", "Maderlac", "Marina Jabour", "Marmoratta", "Minas Mármores e Granitos", "Mobília", "Mundo dos Tapetes", "Murilo Pedreiro", "Natuzzi", "Neuton Polimento", "Peixoto Vidros", "Pormade", "Portobello", "Prima Arte Molduras", "Prima Linea", "Projeto Um", "Resiplan", "Roberto Restaurações", "Santa Cruz Acabamentos", "Sergio Polimento", "Solid Pisos", "Specially Móveis de Alumínio", "São Romão", "Sérgio Polimento", "Templuz", "Terrazzo", "Terrazzo Construtora", "Tom Sobre Tom", "Toptec", "Ualasce Ar Condicionado", "Uno Design da Luz", "Vidroseg", "Vintage", "Vintage Vidros", "Voktum"];
-var DESPESAS=["Alexandre Lima Fotógrafo", "Arquiteta Marina", "Arquiteta Marina Extras", "Arquiteta Marina Obra Dalila e Gabriel", "Arquiteta Nathália", "Arquiteta Thamires", "Arquiteta Vanessa", "Arquiteto Edson", "Boleto Cau Modernos", "CJF", "Cau Empresa", "Cau Pessoal", "Celular", "Contabilidade", "Darf", "Designer Anna Maria", "Designer Anna Maria Extras", "Designer Anna Maria Hora Extra", "Dropbox", "Henrique Queiroga Fotógrafo", "Hostmidia", "Mutabile", "Simples Nacional", "Site"];
+var DESPESAS=["Alexandre Lima Fotógrafo", "Processo Anna", "Pró-labore", "Arquiteta Marina", "Arquiteta Marina Extras", "Arquiteta Marina Obra Dalila e Gabriel", "Arquiteta Nathália", "Arquiteta Thamires", "Arquiteta Vanessa", "Arquiteto Edson", "Boleto Cau Modernos", "CJF", "Cau Empresa", "Cau Pessoal", "Celular", "Contabilidade", "Darf", "Designer Anna Maria", "Designer Anna Maria Extras", "Designer Anna Maria Hora Extra", "Dropbox", "Henrique Queiroga Fotógrafo", "Hostmidia", "Mutabile", "Simples Nacional", "Site"];
 var ORIGENS_SAIDA=["Imposto", "Pagamento de Folha", "Contabilidade", "Marketing", "Fornecedores", "Outros"];
 var DESP_MAP={"Imposto": ["Simples Nacional", "Darf", "Cau Empresa", "Cau Pessoal", "Boleto Cau Modernos", "CJF"], "Pagamento de Folha": ["Arquiteta Marina", "Arquiteta Marina Extras", "Arquiteta Marina Obra Dalila e Gabriel", "Arquiteta Nathália", "Arquiteta Thamires", "Arquiteta Vanessa", "Arquiteto Edson"], "Contabilidade": ["Contabilidade", "Mutabile"], "Marketing": ["Alexandre Lima Fotógrafo", "Henrique Queiroga Fotógrafo", "Designer Anna Maria", "Designer Anna Maria Extras", "Designer Anna Maria Hora Extra", "Hostmidia", "Site", "Dropbox", "Celular"], "Fornecedores": [], "Outros": []};
 var ORIGENS_ENTRADA=["Cliente", "RT"];
@@ -1440,6 +1440,18 @@ function rendAdmin(){
   else if(aTab==='origens_s')renderAdmOrigensS(cont);
   /* restore focus to search input */
   if(admSearch){var el=cont.querySelector('input[placeholder="Buscar…"]');if(el){el.focus();var len=el.value.length;el.setSelectionRange(len,len);}}
+  /* Botão de importação temporária */
+  if(typeof importarExtrato==='function'){
+    var impWrap=document.createElement('div');
+    impWrap.style.cssText='margin-top:24px;padding:16px;background:#fffbe6;border:1.5px solid #f0d060;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap';
+    impWrap.innerHTML='<div><strong style="font-size:13px">📥 Importar Extrato Inter (Jan–Jun 2026)</strong><br><span style="font-size:12px;color:#666">62 lançamentos · Detecta duplicados automaticamente</span></div>';
+    var impBtn=document.createElement('button');
+    impBtn.className='btn btn-dark';
+    impBtn.textContent='Importar agora';
+    impBtn.onclick=function(){if(confirm('Importar lançamentos do extrato? Duplicados serão ignorados.')){importarExtrato();}};
+    impWrap.appendChild(impBtn);
+    cont.appendChild(impWrap);
+  }
 }
 function renderAdmList(cont,vn,arr,label){
   var q=admSearch.toLowerCase();
@@ -1696,6 +1708,112 @@ function clearHFilt(){
   hFutFilt='';
   ['receber','pagar'].forEach(function(k){var b=R('h-btn-'+k);if(b)b.className='btn btn-out';});
   rendHist();
+}
+function importarExtrato(){
+  var registros=[
+    // JANEIRO 2026
+    {Data:'2026-01-05',Valor:12000,  'Movimentação':'Saída',  Origem:'Pagamento de Folha',Despesa:'Pró-labore',   Cliente:'',Fornecedor:''},
+    {Data:'2026-01-05',Valor:6718.53,'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'CONCEPT COMERCIO M. L. O. D. LTDA'},
+    {Data:'2026-01-05',Valor:7497.49,'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'F.T.R. COMERCIO E IMPORTACAO M. LT'},
+    {Data:'2026-01-05',Valor:235.06, 'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'F T R COMERCIO E IMPORTACAO M. LTD'},
+    {Data:'2026-01-09',Valor:3000,   'Movimentação':'Saída',  Origem:'Pagamento de Folha',Despesa:'Pró-labore',   Cliente:'',Fornecedor:''},
+    {Data:'2026-01-15',Valor:3401,   'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'LIDER INDUSTRIA E COMERCIO DE ESTOFADOS'},
+    {Data:'2026-01-15',Valor:1400,   'Movimentação':'Entrada',Origem:'Cliente',Despesa:'',Cliente:'MARINA VERSIEUX',Fornecedor:''},
+    {Data:'2026-01-16',Valor:3990,   'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'RAVENNA INDUSTRIA DE MOVEIS LTDA'},
+    {Data:'2026-01-19',Valor:10122.75,'Movimentação':'Saída', Origem:'Imposto',Despesa:'Simples Nacional',Cliente:'',Fornecedor:''},
+    {Data:'2026-01-19',Valor:286,    'Movimentação':'Saída',  Origem:'Imposto',Despesa:'Darf',           Cliente:'',Fornecedor:''},
+    {Data:'2026-01-21',Valor:583.55, 'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'INFINITO VIDROS COMERCIO V. EIRELI'},
+    {Data:'2026-01-29',Valor:465,    'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'LIDER INDUSTRIA E COMERCIO DE ESTOFADOS'},
+    // FEVEREIRO 2026
+    {Data:'2026-02-04',Valor:1557,   'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'CIALLY ALUMINIO INDUSTRIA E COMERCIO LTDA'},
+    {Data:'2026-02-05',Valor:618,    'Movimentação':'Saída',  Origem:'Contabilidade',Despesa:'Contabilidade',Cliente:'',Fornecedor:''},
+    {Data:'2026-02-09',Valor:2314,   'Movimentação':'Saída',  Origem:'Pagamento de Folha',Despesa:'Pró-labore',   Cliente:'',Fornecedor:''},
+    {Data:'2026-02-09',Valor:6300,   'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'RAVENNA INDUSTRIA DE MOVEIS LTDA'},
+    {Data:'2026-02-10',Valor:2000,   'Movimentação':'Saída',  Origem:'Pagamento de Folha',Despesa:'Pró-labore',   Cliente:'',Fornecedor:''},
+    {Data:'2026-02-11',Valor:618,    'Movimentação':'Saída',  Origem:'Contabilidade',Despesa:'Contabilidade',Cliente:'',Fornecedor:''},
+    {Data:'2026-02-12',Valor:2400,   'Movimentação':'Saída',  Origem:'Pagamento de Folha',Despesa:'Pró-labore',   Cliente:'',Fornecedor:''},
+    {Data:'2026-02-12',Valor:714.21, 'Movimentação':'Saída',  Origem:'Imposto',Despesa:'Simples Nacional',Cliente:'',Fornecedor:''},
+    {Data:'2026-02-12',Valor:2480,   'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'LIDER INDUSTRIA E COMERCIO DE ESTOFADOS'},
+    {Data:'2026-02-13',Valor:10000,  'Movimentação':'Saída',  Origem:'Pagamento de Folha',Despesa:'Pró-labore',   Cliente:'',Fornecedor:''},
+    {Data:'2026-02-13',Valor:8440,   'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'JULI DECORACOES LTDA'},
+    {Data:'2026-02-25',Valor:2400,   'Movimentação':'Entrada',Origem:'Cliente',Despesa:'',Cliente:'EDUARDO HENRIQUE COSTA ALMEIDA',Fornecedor:''},
+    {Data:'2026-02-26',Valor:7010,   'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'LIDER INDUSTRIA E COMERCIO DE ESTOFADOS'},
+    {Data:'2026-02-27',Valor:1518.80,'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'PRIMA LINEA INDUSTRIA E COMERCIO DO MOBILIARIO LTDA'},
+    // MARÇO 2026
+    {Data:'2026-03-01',Valor:2314,   'Movimentação':'Saída',  Origem:'Pagamento de Folha',Despesa:'Pró-labore',   Cliente:'',Fornecedor:''},
+    {Data:'2026-03-03',Valor:960,    'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'PRIMA LINEA INDUSTRIA E COMERCIO DO MOBILIARIO LTDA'},
+    {Data:'2026-03-04',Valor:6800,   'Movimentação':'Entrada',Origem:'Cliente',Despesa:'',Cliente:'GUILHERME LISBOA TAMBASCO',Fornecedor:''},
+    {Data:'2026-03-05',Valor:4500,   'Movimentação':'Saída',  Origem:'Pagamento de Folha',Despesa:'Pró-labore',   Cliente:'',Fornecedor:''},
+    {Data:'2026-03-06',Valor:300,    'Movimentação':'Entrada',Origem:'Cliente',Despesa:'',Cliente:'CONDOMINIO MARIA FLAVIA',Fornecedor:''},
+    {Data:'2026-03-09',Valor:524.45, 'Movimentação':'Saída',  Origem:'Imposto',Despesa:'Darf',           Cliente:'',Fornecedor:''},
+    {Data:'2026-03-10',Valor:4000,   'Movimentação':'Saída',  Origem:'Pagamento de Folha',Despesa:'Pró-labore',   Cliente:'',Fornecedor:''},
+    {Data:'2026-03-11',Valor:445.90, 'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'MBLB COMERCIO DE ACABAMENTOS LTDA'},
+    {Data:'2026-03-13',Valor:8755.60,'Movimentação':'Saída',  Origem:'Outros',Despesa:'Processo Anna',   Cliente:'',Fornecedor:''},
+    {Data:'2026-03-17',Valor:450,    'Movimentação':'Entrada',Origem:'Cliente',Despesa:'',Cliente:'ANA CAROLINA CARVALHO FONSECA',Fornecedor:''},
+    {Data:'2026-03-20',Valor:2100,   'Movimentação':'Entrada',Origem:'Cliente',Despesa:'',Cliente:'A definir',Fornecedor:''},
+    {Data:'2026-03-20',Valor:495,    'Movimentação':'Saída',  Origem:'Imposto',Despesa:'Darf',           Cliente:'',Fornecedor:''},
+    {Data:'2026-03-24',Valor:720,    'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'GIGLIANE TREVISAN ME'},
+    {Data:'2026-03-25',Valor:3784,   'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'AMEX DECORACOES LTDA'},
+    {Data:'2026-03-25',Valor:1631.13,'Movimentação':'Saída',  Origem:'Contabilidade',Despesa:'Contabilidade',Cliente:'',Fornecedor:''},
+    {Data:'2026-03-26',Valor:6239,   'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'LIDER INDUSTRIA E COMERCIO DE ESTOFADOS'},
+    // ABRIL 2026
+    {Data:'2026-04-02',Valor:4500,   'Movimentação':'Saída',  Origem:'Pagamento de Folha',Despesa:'Pró-labore',   Cliente:'',Fornecedor:''},
+    {Data:'2026-04-05',Valor:6000,   'Movimentação':'Saída',  Origem:'Pagamento de Folha',Despesa:'Pró-labore',   Cliente:'',Fornecedor:''},
+    {Data:'2026-04-07',Valor:3900,   'Movimentação':'Entrada',Origem:'Cliente',Despesa:'',Cliente:'JEANE MARIA MENDES SOARES',Fornecedor:''},
+    {Data:'2026-04-14',Valor:498.10, 'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'CASA IN8 COMERCIAL LTDA'},
+    {Data:'2026-04-15',Valor:13359,  'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'LIDER INDUSTRIA E COMERCIO DE ESTOFADOS'},
+    {Data:'2026-04-15',Valor:3550,   'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'JULI DECORACOES LTDA'},
+    {Data:'2026-04-20',Valor:2273.47,'Movimentação':'Saída',  Origem:'Imposto',Despesa:'Simples Nacional',Cliente:'',Fornecedor:''},
+    {Data:'2026-04-22',Valor:499.90, 'Movimentação':'Saída',  Origem:'Imposto',Despesa:'Darf',           Cliente:'',Fornecedor:''},
+    {Data:'2026-04-24',Valor:1631.13,'Movimentação':'Saída',  Origem:'Contabilidade',Despesa:'Contabilidade',Cliente:'',Fornecedor:''},
+    {Data:'2026-04-30',Valor:6800,   'Movimentação':'Entrada',Origem:'Cliente',Despesa:'',Cliente:'IARA ROLIM F FIGUEIREDO',Fornecedor:''},
+    // MAIO 2026
+    {Data:'2026-05-04',Valor:15000,  'Movimentação':'Saída',  Origem:'Pagamento de Folha',Despesa:'Pró-labore',   Cliente:'',Fornecedor:''},
+    {Data:'2026-05-04',Valor:4500,   'Movimentação':'Saída',  Origem:'Pagamento de Folha',Despesa:'Pró-labore',   Cliente:'',Fornecedor:''},
+    {Data:'2026-05-08',Valor:7000,   'Movimentação':'Saída',  Origem:'Pagamento de Folha',Despesa:'Pró-labore',   Cliente:'',Fornecedor:''},
+    {Data:'2026-05-08',Valor:3900,   'Movimentação':'Entrada',Origem:'Cliente',Despesa:'',Cliente:'JEANE MARIA MENDES SOARES',Fornecedor:''},
+    {Data:'2026-05-11',Valor:450,    'Movimentação':'Entrada',Origem:'Cliente',Despesa:'',Cliente:'DAVIDSON ALVES ROCHA',Fornecedor:''},
+    {Data:'2026-05-20',Valor:1240.41,'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'OOL LIGHT ILUMINACAO EIRELI'},
+    {Data:'2026-05-20',Valor:2783.74,'Movimentação':'Saída',  Origem:'Imposto',Despesa:'Simples Nacional',Cliente:'',Fornecedor:''},
+    {Data:'2026-05-22',Valor:1938.30,'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'IGL IMP COM MAT CONST MATRIZ'},
+    {Data:'2026-05-29',Valor:1631.13,'Movimentação':'Saída',  Origem:'Contabilidade',Despesa:'Contabilidade',Cliente:'',Fornecedor:''},
+    // JUNHO 2026
+    {Data:'2026-06-01',Valor:320,    'Movimentação':'Entrada',Origem:'RT',  Despesa:'',Cliente:'',Fornecedor:'T TAPETES LTDA'}
+  ];
+  var adicionados=0, pulados=0;
+  registros.forEach(function(r){
+    var existe=dados.some(function(d){
+      return d.Data===r.Data && parseFloat(d.Valor)===r.Valor && d['Movimentação']===r['Movimentação'];
+    });
+    if(existe){pulados++;return;}
+    var parts=r.Data.split('-');
+    var novo={
+      'Movimentação':r['Movimentação'],
+      Origem:r.Origem,
+      Cliente:r.Cliente||'',
+      Fornecedor:r.Fornecedor||'',
+      Despesa:r.Despesa||'',
+      Valor:r.Valor,
+      Data:r.Data,
+      Mês:parts[1]?parseInt(parts[1]):'',
+      Ano:parts[0]?parseInt(parts[0]):'',
+      'Nota Fiscal':'Não',
+      obs:'Importado do extrato Inter',
+      Parcela:'',
+      pago:true,
+      nf_emitida:false,
+      _ts:Date.now()
+    };
+    dados.push(novo);
+    adicionados++;
+  });
+  if(adicionados>0){
+    salvarLocal();
+    rendAll();
+    showToast('✅ '+adicionados+' lançamentos importados! ('+pulados+' já existiam)','#27ae60',6000);
+  } else {
+    showToast('Nenhum registro novo — todos já existiam no sistema.','#e67e22',5000);
+  }
 }
 function init(){
   var anos=[...new Set(dados.map(function(r){return r.Ano?String(r.Ano):null;}).filter(Boolean))].sort(function(a,b){return b-a;});
