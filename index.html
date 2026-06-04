@@ -525,9 +525,10 @@ tr.row-pago td{opacity:.75}
   <div id="p-hist" class="page">
     <div class="filters">
       <input type="text" id="h-q" placeholder="&#128269; Buscar..." oninput="rendHist()">
-      <select id="h-mov" onchange="rendHist()"><option value="">Todos</option><option value="Entrada">Entrada</option><option value="Sa&iacute;da">Sa&iacute;da</option></select>
       <select id="h-ano" onchange="rendHist()"></select>
       <select id="h-mes" onchange="rendHist()"></select>
+      <button id="h-btn-entrada" class="btn btn-out" onclick="setHMovFilt('Entrada')">&#8599; Entrada</button>
+      <button id="h-btn-saida" class="btn btn-out" onclick="setHMovFilt('Saída')">&#8600; Saída</button>
       <button id="h-btn-receber" class="btn btn-out" onclick="setHFutFilt('receber')">&#8599; A Receber</button>
       <button id="h-btn-pagar" class="btn btn-out" onclick="setHFutFilt('pagar')">&#8600; A Pagar</button>
       <button class="btn btn-out" onclick="clearHFilt()">&#10005; Limpar</button>
@@ -1004,7 +1005,7 @@ function saveD(){
       Cliente:dType==='entrada'?(R('d-cliente').value||''):'',
       Fornecedor:dType==='entrada'?eRT:'',
       Despesa:dType==='saida'?(R('d-desp').value||''):'',
-      Valor:val,Data:dt,DataLanc:today(),Mês:parts[1]?parseInt(parts[1]):'',Ano:parts[0]?parseInt(parts[0]):'',
+      Valor:val,Data:dt,DataLanc:dt,Mês:parts[1]?parseInt(parts[1]):'',Ano:parts[0]?parseInt(parts[0]):'',
       'Nota Fiscal':dNF,obs:'',Parcela:n>1?(('0'+i).slice(-2)+'-'+('0'+n).slice(-2)):'',pago:false,nf_emitida:false,_new:true,_ts:Date.now()});
   }
   salvarLocal();alert(n>1?n+'x lançado!':'Salvo!');clearD();rendAll();
@@ -1048,7 +1049,7 @@ function saveM(){
       Cliente:mType==='entrada'?(R('m-cliente').value||''):'',
       Fornecedor:mType==='entrada'?eRT:'',
       Despesa:mType==='saida'?(R('m-desp').value||''):'',
-      Valor:val,Data:dt,DataLanc:today(),Mês:parts[1]?parseInt(parts[1]):'',Ano:parts[0]?parseInt(parts[0]):'',
+      Valor:val,Data:dt,DataLanc:dt,Mês:parts[1]?parseInt(parts[1]):'',Ano:parts[0]?parseInt(parts[0]):'',
       'Nota Fiscal':mNF,obs:'',Parcela:n>1?(('0'+i).slice(-2)+'-'+('0'+n).slice(-2)):'',pago:false,nf_emitida:false,_new:true,_ts:Date.now()});
   }
   salvarLocal();
@@ -1403,8 +1404,16 @@ function rendChart(divId,legId,mov,dd){
   container.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'">'+h+'</svg>';
   if(R(legId))R(legId).innerHTML=activeYears.map(function(y){return '<div class="chart-leg-item"><div class="chart-leg-dot" style="background:'+colors[String(y)]+'"></div>'+y+'</div>';}).join('');
 }
-var hSortCol='Data',hSortDir=-1,hFutFilt='';
+var hSortCol='Data',hSortDir=-1,hFutFilt='',hMovFilt='';
 function setHSort(col){if(hSortCol===col){hSortDir*=-1;}else{hSortCol=col;hSortDir=(col==='Pago'||col==='NFem')?1:-1;}rendHist();}
+function setHMovFilt(v){
+  hMovFilt=(hMovFilt===v)?'':v;
+  ['Entrada','Saída'].forEach(function(k){
+    var id=k==='Entrada'?'h-btn-entrada':'h-btn-saida';
+    var btn=R(id);if(btn)btn.className='btn '+(hMovFilt===k?'btn-dark':'btn-out');
+  });
+  rendHist();
+}
 function setHFutFilt(v){
   hFutFilt=(hFutFilt===v)?'':v;
   ['receber','pagar'].forEach(function(k){
@@ -1415,7 +1424,6 @@ function setHFutFilt(v){
 }
 function getHFilt(){
   var q=(R('h-q')?R('h-q').value||'':'').toLowerCase();
-  var mov=R('h-mov')?R('h-mov').value:'';
   var ano=R('h-ano')?R('h-ano').value:'';
   var mes=R('h-mes')?R('h-mes').value:'';
   var td=today();
@@ -1427,7 +1435,7 @@ function getHFilt(){
       if(r['Movimentação']!=='Saída')return false;
       if(!r.Data||r.Data<=td)return false;
     } else {
-      if(mov&&r['Movimentação']!==mov)return false;
+      if(hMovFilt&&r['Movimentação']!==hMovFilt)return false;
       if(ano&&String(r.Ano)!==ano)return false;
       if(mes&&String(getMesNum(r))!==mes)return false;
     }
@@ -1994,9 +2002,10 @@ function toggleSidebar(){
   if(mc){mc.style.marginLeft=sb.classList.contains('collapsed')?'60px':'220px';}
 }
 function clearHFilt(){
-  ['h-q','h-ano','h-mes','h-mov'].forEach(function(id){var e=R(id);if(e)e.value='';});
-  hFutFilt='';
+  ['h-q','h-ano','h-mes'].forEach(function(id){var e=R(id);if(e)e.value='';});
+  hFutFilt='';hMovFilt='';
   ['receber','pagar'].forEach(function(k){var b=R('h-btn-'+k);if(b)b.className='btn btn-out';});
+  ['h-btn-entrada','h-btn-saida'].forEach(function(id){var b=R(id);if(b)b.className='btn btn-out';});
   rendHist();
 }
 var hSelected=new Set();
