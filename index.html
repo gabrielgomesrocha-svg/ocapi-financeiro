@@ -705,7 +705,7 @@ tr.row-pago td{opacity:.75}
         </div>
       </div>
       <!-- STEP 3: Done -->
-      <div id="imp-step3" style="display:none;text-align:center;padding:60px 20px">
+      <div id="imp-step3" style="display:none;text-align:center;padding:40px 20px 0">
         <div style="font-size:56px;margin-bottom:16px">✅</div>
         <h3 style="font-size:20px;font-weight:800;margin-bottom:8px" id="imp-done-title">Importação concluída!</h3>
         <p style="color:#888;font-size:14px;margin-bottom:28px" id="imp-done-sub"></p>
@@ -714,6 +714,8 @@ tr.row-pago td{opacity:.75}
           <button onclick="showPage('p-hist',document.querySelector(\'[onclick*=p-hist]\'))" style="background:#1a1a1a;color:#fff;border:none;border-radius:10px;padding:11px 22px;font-size:14px;font-weight:700;cursor:pointer">Ver em Controle →</button>
         </div>
       </div>
+    <!-- HISTÓRICO DE IMPORTAÇÕES -->
+    <div id="imp-historico" style="margin-top:32px;padding:0 0 32px"></div>
     </div>
   </div>
 
@@ -836,7 +838,7 @@ function salvarLocal(){salvarFirebase();}
 function salvarFirebase(){
   if(!fbAuth||!fbAuth.currentUser){return;}
   var cfg={CLI_HON:CLI_HON,RT_EMPRESAS:RT_EMPRESAS,DESPESAS:DESPESAS,DESP_MAP:DESP_MAP,ORIGENS_ENTRADA:ORIGENS_ENTRADA,ORIGENS_SAIDA:ORIGENS_SAIDA,ALIASES:ALIASES};
-  var payload={dados:dados,config:cfg,conciliacoes:conciliacoes,migrated:true};
+  var payload={dados:dados,config:cfg,conciliacoes:conciliacoes,imp_historico:imp_historico,migrated:true};
   var payloadBytes=new Blob([JSON.stringify(payload)]).size;
   var LIMIT=1000000;
   if(payloadBytes>LIMIT*0.9){
@@ -856,6 +858,7 @@ var DESP_MAP={"Imposto": ["Simples Nacional", "Darf", "Cau Empresa", "Cau Pessoa
 var ORIGENS_ENTRADA=["Cliente", "RT"];
 var ALIASES=[]; // [{extrato:'TEREZA',sistema:'Terezinha Magalhães'}]
 var conciliacoes=[]; // [{tx:{...}, match:{idx,d}, status:'pendente'}]
+var imp_historico=[]; // [{id,data,arquivo,importados,conciliacoes,aliases:[]}]
 var MES_NUM={'Janeiro':1,'Fevereiro':2,'Março':3,'Abril':4,'Maio':5,'Junho':6,'Julho':7,'Agosto':8,'Setembro':9,'Outubro':10,'Novembro':11,'Dezembro':12};
 function getMesNum(r){var m=r.Mês;if(!m)return 0;if(typeof m==='number')return m;return MES_NUM[m]||parseInt(m)||0;}
 var dashMode='mes_atual',dashAno='',dashFrom='',dashTo='',dashUltPage=1;
@@ -1997,7 +2000,7 @@ function showPage(pid,el){
   R(pid).classList.add('act');el.classList.add('act');
   if(pid==='p-dash')rendDash();if(pid==='p-hist')rendHist();
   if(pid==='p-alertas')rendAlertas();if(pid==='p-admin')rendAdmin();
-  if(pid==='p-importar')impInitPage();if(pid==='p-concil')rendConcil();
+  if(pid==='p-importar'){impInitPage();rendImpHistorico();}if(pid==='p-concil')rendConcil();
 }
 function toggleSidebar(){
   var sb=document.getElementById('sidebar');
@@ -2285,6 +2288,7 @@ function mergeFirebaseData(fdata){
     if(c.ALIASES){ALIASES=c.ALIASES;}
   }
   if(fdata&&fdata.conciliacoes){conciliacoes=fdata.conciliacoes;}
+  if(fdata&&fdata.imp_historico){imp_historico=fdata.imp_historico;}
   atualizarConcilBadge();
   // migração: renomear Honorário → Cliente
   var honIdx=ORIGENS_ENTRADA.indexOf('Honorário');
@@ -2390,6 +2394,7 @@ function impInitPage(){
 function impCarregarPDF(input){
   var file = input.files[0];
   if(!file) return;
+  window._impArquivoNome = file.name.replace(/\.pdf$/i,'').trim();
   R('imp-dropzone').style.display='none';
   R('imp-loading').style.display='block';
 
@@ -3012,6 +3017,21 @@ function impConfirmarImport(){
     window._aliasSugestoes=aliasSugestoes;
   }
 
+  // Registrar sessão no histórico
+  var sessao = {
+    id: Date.now(),
+    data: today(),
+    hora: new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
+    arquivo: window._impArquivoNome || 'Extrato Banco Inter',
+    importados: importados,
+    conciliacoes: paraConcilar,
+    aliases: aliasSugestoes.slice()
+  };
+  imp_historico.unshift(sessao);
+  if(imp_historico.length>50) imp_historico=imp_historico.slice(0,50);
+  salvarLocal();
+  rendImpHistorico();
+
   showToast('✅ '+importados+' importados'+(paraConcilar?' · ⏳ '+paraConcilar+' para conciliar':'')+(aliasSugestoes.length?' · 💡 '+aliasSugestoes.length+' aliases sugeridos':''),'#27ae60',5000);
 }
 function aliasConfirmar(si, extrato){
@@ -3026,6 +3046,65 @@ function aliasConfirmar(si, extrato){
   var list=R('alias-sug-list');
   if(list){var items=list.querySelectorAll('div');if(items[si])items[si].remove();}
 }
+function rendImpHistorico(){
+  var el = R('imp-historico');
+  if(!el) return;
+  if(!imp_historico.length){ el.innerHTML=''; return; }
+  var html = '<div style="font-size:13px;font-weight:800;color:#1a1a1a;margin-bottom:16px;padding:0 4px">📋 Histórico de Importações</div>';
+  imp_historico.forEach(function(s, si){
+    var corStatus = s.conciliacoes > 0 ? '#e67e22' : '#27ae60';
+    var aliasPendentes = (s.aliases||[]).filter(function(a){ return !a._confirmado && !a._ignorado && !ALIASES.some(function(al){return al.extrato.toUpperCase()===a.extrato.toUpperCase();}); });
+    html += '<div style="background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:18px 20px;margin-bottom:14px">';
+    // Header
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">';
+    html += '<div>';
+    html += '<div style="font-size:14px;font-weight:800;color:#1a1a1a">'+s.arquivo+'</div>';
+    html += '<div style="font-size:11px;color:#aaa;margin-top:2px">'+fmtDate(s.data)+' às '+s.hora+'</div>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+    html += '<span style="background:#f0f9f4;color:#27ae60;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700">'+s.importados+' lançamentos</span>';
+    if(s.conciliacoes>0) html += '<span style="background:#fff8f0;color:#e67e22;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700">'+s.conciliacoes+' conciliações</span>';
+    html += '</div></div>';
+    // Aliases
+    if(aliasPendentes.length > 0){
+      html += '<div style="border-top:1px solid #f5f5f5;padding-top:12px">';
+      html += '<div style="font-size:12px;font-weight:700;color:#555;margin-bottom:10px">💡 Aliases sugeridos desta importação:</div>';
+      aliasPendentes.forEach(function(a, ai){
+        var safeExt = a.extrato.replace(/'/g,"\\'");
+        var safeSis = a.sistema.replace(/'/g,"\\'");
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #fafafa;flex-wrap:wrap">';
+        html += '<span style="font-size:12px;font-weight:600;color:#c0392b;min-width:180px">'+a.extrato+'</span>';
+        html += '<span style="color:#ccc;font-size:11px">→</span>';
+        html += '<span style="font-size:12px;color:#27ae60;flex:1">'+a.sistema+'</span>';
+        html += '<button onclick="impHistAliasConfirmar('+si+','+ai+',\''+safeExt+'\',\''+safeSis+'\')" style="padding:5px 12px;background:#27ae60;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">✓ Confirmar</button>';
+        html += '<button onclick="impHistAliasIgnorar('+si+','+ai+')" style="padding:5px 9px;background:#f5f5f5;border:none;border-radius:7px;font-size:11px;cursor:pointer;color:#888">✗</button>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function impHistAliasConfirmar(si, ai, extrato, sistema){
+  if(!ALIASES.some(function(a){return a.extrato.toUpperCase()===extrato.toUpperCase();})){
+    ALIASES.push({extrato:extrato, sistema:sistema});
+    salvarLocal();
+    showToast('Alias adicionado: '+extrato+' → '+sistema,'#27ae60',3000);
+  }
+  // Marcar como confirmado no histórico
+  if(imp_historico[si]&&imp_historico[si].aliases[ai]) imp_historico[si].aliases[ai]._confirmado=true;
+  salvarLocal();
+  rendImpHistorico();
+}
+
+function impHistAliasIgnorar(si, ai){
+  if(imp_historico[si]&&imp_historico[si].aliases[ai]) imp_historico[si].aliases[ai]._ignorado=true;
+  salvarLocal();
+  rendImpHistorico();
+}
+
 // ── Badge de conciliação ──
 function atualizarConcilBadge(){
   var pendentes = conciliacoes.filter(function(c){return c.status==='pendente';}).length;
@@ -3175,6 +3254,7 @@ function impVoltarStep1(){
   R('imp-loading').style.display='none';
   R('imp-loading').innerHTML='<div style="font-size:32px;margin-bottom:12px">⏳</div> Lendo PDF e extraindo transações...';
   var inp = R('imp-file-input'); if(inp) inp.value='';
+  rendImpHistorico();
 }
 </script>
 </body>
