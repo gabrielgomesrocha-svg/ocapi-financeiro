@@ -1693,7 +1693,8 @@ function rendAdmin(){
   /* Botão limpar importações */
   var limpWrap=document.createElement('div');
   limpWrap.style.cssText='margin-top:24px;padding:16px;background:#fef5f5;border:1.5px solid #f5c6c6;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap';
-  var importCount=dados.filter(function(d){return d.fonte_import;}).length;
+  function isImportado(d){return !!(d.fonte_import||(d.obs&&d.obs.indexOf('Importado do extrato')>=0)||(d.obs&&d.obs.indexOf('extrato Inter')>=0));}
+  var importCount=dados.filter(isImportado).length;
   limpWrap.innerHTML='<div><strong style="font-size:13px">🗑️ Limpar lançamentos importados do extrato</strong><br><span style="font-size:12px;color:#666">'+importCount+' lançamento(s) com origem em extrato bancário</span></div>';
   var limpBtn=document.createElement('button');
   limpBtn.textContent='Limpar importações';
@@ -1704,13 +1705,16 @@ function rendAdmin(){
     if(!confirm('Remover '+importCount+' lançamento(s) diretos e desfazer '+concilCount+' conciliação(ões)? Esta ação não pode ser desfeita.'))return;
     // Desfazer conciliações aprovadas (restaurar valores originais)
     conciliacoes.forEach(function(c){
-      if(c.status==='aprovado'&&c.original&&dados[c.matchIdx]){
-        var d=dados[c.matchIdx];
-        d.Data=c.original.Data;d.Ano=c.original.Ano;d.Mês=c.original.Mês;
-        d.pago=c.original.pago;d.conciliado=c.original.conciliado;d.conciliado_em=c.original.conciliado_em;
+      if(c.status==='aprovado'&&c.original){
+        var found=concilBuscarDado(c);
+        var d=found?found.d:(dados[c.matchIdx]||null);
+        if(d){
+          d.Data=c.original.Data;d.Ano=c.original.Ano;d.Mês=c.original.Mês;
+          d.pago=c.original.pago;d.conciliado=c.original.conciliado;d.conciliado_em=c.original.conciliado_em;
+        }
       }
     });
-    dados=dados.filter(function(d){return !d.fonte_import;});
+    dados=dados.filter(function(d){return !isImportado(d);});
     conciliacoes=[];
     salvarLocal();rendAdmin();rendAll();
     showToast('✅ Importações removidas com sucesso','#27ae60',3000);
