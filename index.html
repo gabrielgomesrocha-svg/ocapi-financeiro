@@ -195,6 +195,7 @@ tr.row-pago td{opacity:.75}
 .hist-sub{font-size:11px;color:#999;margin-top:3px}
 .hist-val{font-size:16px;font-weight:700}
 .pos{color:#27ae60}.neg{color:#c0392b}
+@media(max-width:1200px){#dash-kpi-row1,#dash-kpi-row2{grid-template-columns:repeat(2,1fr)!important;}}
 @media(max-width:1100px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:768px){#desk{display:none!important}#mob{display:none}}
 @media(max-width:768px){body.mob-auth #mob{display:flex}}
@@ -348,8 +349,8 @@ tr.row-pago td{opacity:.75}
         <button class="btn btn-dark btn-sm" onclick="onDashFiltApply()">Aplicar</button>
       </span>
     </div>
-    <div id="dash-kpi-row1" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px"></div>
-    <div id="dash-kpi-row2" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">
+    <div id="dash-kpi-row1" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px"></div>
+    <div id="dash-kpi-row2" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
     
   </div>
     <div class="chart-row">
@@ -1076,13 +1077,19 @@ function rendDash(){
   var margem=ent>0?Math.round(sal/ent*100):0;
   var margemCls=margem>=0?'kpi-grn':'kpi-red';
   var margemIcon=margem>=0?'▲':'▼';
+  var totalEnt=dd.filter(function(r){return r['Movimentação']==='Entrada';}).length;
+  var nfSimEnt=dd.filter(function(r){return r['Movimentação']==='Entrada'&&r['Nota Fiscal']==='Sim';}).length;
+  var nfPct=totalEnt>0?Math.round(nfSimEnt/totalEnt*100):0;
+  var nfPctCls=nfPct>=50?'kpi-grn':'kpi-red';
   if(r1)r1.innerHTML=
     kpi('Faturamento Total',fmt(ent),'kpi-grn','Todas as entradas',fmtDelta(ent,pEnt))+
     kpi('Despesa Total',fmt(sai),'kpi-red','Todas as saídas',fmtDelta(sai,pSai))+
-    kpi('Resultado',fmt(sal),salCls,'Faturamento − Despesa',fmtDelta(sal,pSal));
+    kpi('Resultado',fmt(sal),salCls,'Faturamento − Despesa',fmtDelta(sal,pSal))+
+    kpi('Margem de Lucro',margemIcon+' '+margem+'%',margemCls,'Resultado ÷ Faturamento','');
   if(r2)r2.innerHTML=
-    kpi('Margem de Lucro',margemIcon+' '+margem+'%',margemCls,'Resultado ÷ Faturamento','')+
     kpi('Futuro a Receber',fmt(futR),'kpi-grn','Entradas ainda não confirmadas','')+
+    kpi('Futuro a Pagar',fmt(futP),'kpi-red','Saídas ainda não confirmadas','')+
+    kpi('NF Emitida',nfPct+'%',nfPctCls,nfSimEnt+' de '+totalEnt+' entradas','')+
     alertKpi;
   setTimeout(function(){
     var dd2026=dados.filter(function(r){return String(r.Ano)==='2026'||parseInt(r.Ano)===2026;});
@@ -1684,8 +1691,17 @@ function rendAdmin(){
   limpBtn.textContent='Limpar importações';
   limpBtn.style.cssText='padding:9px 18px;background:#c0392b;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap';
   limpBtn.onclick=function(){
-    if(importCount===0){showToast('Nenhum lançamento importado encontrado','#e67e22');return;}
-    if(!confirm('Remover '+importCount+' lançamento(s) importados do extrato? Esta ação não pode ser desfeita.'))return;
+    var concilCount=conciliacoes.filter(function(c){return c.status==='aprovado'||c.status==='pendente'||c.status==='rejeitado';}).length;
+    if(importCount===0&&concilCount===0){showToast('Nenhum lançamento importado encontrado','#e67e22');return;}
+    if(!confirm('Remover '+importCount+' lançamento(s) diretos e desfazer '+concilCount+' conciliação(ões)? Esta ação não pode ser desfeita.'))return;
+    // Desfazer conciliações aprovadas (restaurar valores originais)
+    conciliacoes.forEach(function(c){
+      if(c.status==='aprovado'&&c.original&&dados[c.matchIdx]){
+        var d=dados[c.matchIdx];
+        d.Data=c.original.Data;d.Ano=c.original.Ano;d.Mês=c.original.Mês;
+        d.pago=c.original.pago;d.conciliado=c.original.conciliado;d.conciliado_em=c.original.conciliado_em;
+      }
+    });
     dados=dados.filter(function(d){return !d.fonte_import;});
     conciliacoes=[];
     salvarLocal();rendAdmin();rendAll();
@@ -3019,13 +3035,27 @@ function concilAprovar(ci){
   // Marcar registro existente como conciliado
   var d=dados[c.matchIdx];
   if(d){
+    // Guardar estado original para poder desfazer no Limpar
+    c.original={Data:d.Data,Ano:d.Ano,Mês:d.Mês,pago:d.pago,conciliado:d.conciliado,conciliado_em:d.conciliado_em};
     d.conciliado=true;d.conciliado_em=new Date().toISOString().slice(0,10);d.pago=true;
     // Atualiza Data de Movimentação com a data real do extrato
-    var txData=c.tx.data; // yyyy-mm-dd
+    var txData=c.tx.data;
     if(txData){
       d.Data=txData;
       var pts=txData.split('-');
       d.Ano=parseInt(pts[0]);d.Mês=parseInt(pts[1]);
+    }
+  }
+  // Auto-salvar alias: se nome do extrato ≠ nome no sistema, aprende automaticamente
+  if(d){
+    var txNomeAlias=(c.tx.descricao||'').trim().toUpperCase();
+    var sysNomeAlias=(d.Cliente||d.Descrição||'').trim().toUpperCase();
+    if(txNomeAlias && sysNomeAlias && txNomeAlias!==sysNomeAlias){
+      var aliasJaExiste=ALIASES.some(function(a){return a.extrato.toUpperCase()===txNomeAlias;});
+      if(!aliasJaExiste){
+        ALIASES.push({extrato:c.tx.descricao.trim(), sistema:d.Cliente||d.Descrição||''});
+        showToast('📚 Alias aprendido: "'+c.tx.descricao.trim()+'" → "'+(d.Cliente||d.Descrição||'')+'"','#2980b9',4000);
+      }
     }
   }
   c.status='aprovado';
@@ -3047,6 +3077,7 @@ function concilRejeitar(ci){
     Origem:tx.tipo==='Saída'?(tx.categoria||''):(tx.origem||'Cliente'),
     Cliente:tx.cliente||'',RT:tx.rt||'',Despesa:tx.despesa||'',
     Observações:tx.obs||'',nf_emitida:tx.nf==='Sim',
+    pago:true,
     _ts:Date.now(),fonte_import:'Extrato Banco Inter'
   });
   c.status='rejeitado';
