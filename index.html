@@ -1005,7 +1005,7 @@ function saveD(){
       Cliente:dType==='entrada'?(R('d-cliente').value||''):'',
       Fornecedor:dType==='entrada'?eRT:'',
       Despesa:dType==='saida'?(R('d-desp').value||''):'',
-      Valor:val,Data:dt,DataLanc:dt,Mês:parts[1]?parseInt(parts[1]):'',Ano:parts[0]?parseInt(parts[0]):'',
+      Valor:val,Data:dt,DataLanc:today(),Mês:parts[1]?parseInt(parts[1]):'',Ano:parts[0]?parseInt(parts[0]):'',
       'Nota Fiscal':dNF,obs:'',Parcela:n>1?(('0'+i).slice(-2)+'-'+('0'+n).slice(-2)):'',pago:false,nf_emitida:false,_new:true,_ts:Date.now()});
   }
   salvarLocal();alert(n>1?n+'x lançado!':'Salvo!');clearD();rendAll();
@@ -1049,7 +1049,7 @@ function saveM(){
       Cliente:mType==='entrada'?(R('m-cliente').value||''):'',
       Fornecedor:mType==='entrada'?eRT:'',
       Despesa:mType==='saida'?(R('m-desp').value||''):'',
-      Valor:val,Data:dt,DataLanc:dt,Mês:parts[1]?parseInt(parts[1]):'',Ano:parts[0]?parseInt(parts[0]):'',
+      Valor:val,Data:dt,DataLanc:today(),Mês:parts[1]?parseInt(parts[1]):'',Ano:parts[0]?parseInt(parts[0]):'',
       'Nota Fiscal':mNF,obs:'',Parcela:n>1?(('0'+i).slice(-2)+'-'+('0'+n).slice(-2)):'',pago:false,nf_emitida:false,_new:true,_ts:Date.now()});
   }
   salvarLocal();
@@ -2287,6 +2287,10 @@ function mergeFirebaseData(fdata){
   if(honIdx>=0){if(ORIGENS_ENTRADA.indexOf('Cliente')<0)ORIGENS_ENTRADA[honIdx]='Cliente';else ORIGENS_ENTRADA.splice(honIdx,1);}
   // migração: defaults para pago/nf_emitida em registros históricos
   dados.forEach(function(r){if(r.pago===undefined)r.pago=true;if(r.nf_emitida===undefined)r.nf_emitida=true;});
+  // migração: DataLanc ausente → usa Data de Movimentação (apenas registros antigos)
+  var migrou=false;
+  dados.forEach(function(r){if(!r.DataLanc&&r.Data){r.DataLanc=r.Data;migrou=true;}});
+  if(migrou)salvarLocal();
 }
 
 // Add Enter key support for login
