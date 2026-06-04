@@ -2999,9 +2999,7 @@ function impConfirmarImport(){
     var step3=R('imp-step3');
     var aliasDiv=document.createElement('div');
     aliasDiv.style.cssText='margin-top:24px;background:#fff;border-radius:12px;border:1.5px solid var(--bord);padding:20px';
-    var allNomesDL = (CLI_HON.concat(RT_EMPRESAS)).map(function(n){return '<option value="'+n.replace(/"/g,'&quot;')+'">'+n+'</option>';}).join('');
-    var aliasH='<datalist id="alias-dl-nomes">'+allNomesDL+'</datalist>'
-      +'<div style="font-size:13px;font-weight:700;margin-bottom:14px">💡 Sugestões de Alias detectadas</div>'
+    var aliasH='<div style="font-size:13px;font-weight:700;margin-bottom:14px">💡 Sugestões de Alias detectadas</div>'
       +'<p style="font-size:12px;color:#888;margin-bottom:14px">Confirme ou edite o nome do sistema antes de vincular:</p>'
       +'<div id="alias-sug-list">';
     aliasSugestoes.forEach(function(s,si){
@@ -3009,7 +3007,7 @@ function impConfirmarImport(){
       aliasH+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5;flex-wrap:wrap">'
         +'<span style="font-size:12px;font-weight:600;color:#c0392b;min-width:180px">'+s.extrato+'</span>'
         +'<span style="color:#aaa">→</span>'
-        +'<input id="alias-inp-'+si+'" list="alias-dl-nomes" value="'+s.sistema.replace(/"/g,'&quot;')+'" placeholder="Nome no sistema..." style="flex:1;min-width:160px;border:1.5px solid #e0e0e0;border-radius:7px;padding:5px 10px;font-size:12px;outline:none">'
+        +aliasDropdownHTML('alias-inp-'+si, s.sistema)
         +'<button onclick="aliasConfirmar('+si+',\''+safeExt+'\')" style="padding:6px 14px;background:#27ae60;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">✓ Confirmar</button>'
         +'<button onclick="this.parentElement.remove()" style="padding:6px 10px;background:#f5f5f5;border:none;border-radius:7px;font-size:12px;cursor:pointer;color:#888">✗</button>'
         +'</div>';
@@ -3076,10 +3074,7 @@ function rendImpHistorico(){
     html += '</div></div>';
     // Aliases
     if(aliasPendentes.length > 0){
-      var dlId = 'hist-dl-'+si;
-      var allNomesHL = (CLI_HON.concat(RT_EMPRESAS)).map(function(n){return '<option value="'+n.replace(/"/g,'&quot;')+'">'+n+'</option>';}).join('');
       html += '<div style="border-top:1px solid #f5f5f5;padding-top:12px">';
-      html += '<datalist id="'+dlId+'">'+allNomesHL+'</datalist>';
       html += '<div style="font-size:12px;font-weight:700;color:#555;margin-bottom:10px">💡 Aliases sugeridos desta importação:</div>';
       aliasPendentes.forEach(function(a, ai){
         var safeExt = a.extrato.replace(/'/g,"\\'");
@@ -3087,7 +3082,7 @@ function rendImpHistorico(){
         html += '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #fafafa;flex-wrap:wrap">';
         html += '<span style="font-size:12px;font-weight:600;color:#c0392b;min-width:180px">'+a.extrato+'</span>';
         html += '<span style="color:#ccc;font-size:11px">→</span>';
-        html += '<input id="'+inpId+'" list="'+dlId+'" value="'+a.sistema.replace(/"/g,'&quot;')+'" placeholder="Nome no sistema..." style="flex:1;min-width:160px;border:1.5px solid #e0e0e0;border-radius:7px;padding:4px 9px;font-size:12px;outline:none">';
+        html += aliasDropdownHTML(inpId, a.sistema);
         html += '<button onclick="impHistAliasConfirmar('+si+','+ai+',\''+safeExt+'\',\''+inpId+'\')" style="padding:5px 12px;background:#27ae60;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">✓ Confirmar</button>';
         html += '<button onclick="impHistAliasIgnorar('+si+','+ai+')" style="padding:5px 9px;background:#f5f5f5;border:none;border-radius:7px;font-size:11px;cursor:pointer;color:#888">✗</button>';
         html += '</div>';
@@ -3122,6 +3117,49 @@ function impHistAliasIgnorar(si, ai){
   if(imp_historico[si]&&imp_historico[si].aliases[ai]) imp_historico[si].aliases[ai]._ignorado=true;
   salvarLocal();
   rendImpHistorico();
+}
+
+// ── Alias dropdown customizado ──
+function aliasDropdownHTML(inpId, valorAtual){
+  var safe = (valorAtual||'').replace(/"/g,'&quot;');
+  return '<div style="position:relative;flex:1;min-width:160px" id="wrap-'+inpId+'">'
+    +'<input id="'+inpId+'" type="text" value="'+safe+'" placeholder="Nome no sistema..." autocomplete="off"'
+    +' onFocus="aliasDropShow(\''+inpId+'\')" onInput="aliasDropFilter(\''+inpId+'\')"'
+    +' onBlur="setTimeout(function(){aliasDropHide(\''+inpId+'\')},180)"'
+    +' style="width:100%;box-sizing:border-box;border:1.5px solid #e0e0e0;border-radius:7px;padding:5px 32px 5px 10px;font-size:12px;outline:none">'
+    +'<span onclick="aliasDropShow(\''+inpId+'\')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;font-size:11px;user-select:none">▼</span>'
+    +'<div id="drop-'+inpId+'" style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;max-height:200px;overflow-y:auto;background:#fff;border:1.5px solid #ddd;border-radius:8px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.12)"></div>'
+    +'</div>';
+}
+function aliasDropGetNomes(){
+  return CLI_HON.concat(RT_EMPRESAS).sort(function(a,b){return a.localeCompare(b,'pt');});
+}
+function aliasDropShow(inpId){
+  var inp = R(inpId); if(!inp) return;
+  aliasDropFilter(inpId);
+  var drop = R('drop-'+inpId); if(drop) drop.style.display='block';
+}
+function aliasDropHide(inpId){
+  var drop = R('drop-'+inpId); if(drop) drop.style.display='none';
+}
+function aliasDropFilter(inpId){
+  var inp = R(inpId); var drop = R('drop-'+inpId); if(!inp||!drop) return;
+  var q = inp.value.trim().toLowerCase();
+  var nomes = aliasDropGetNomes();
+  var filtrados = q ? nomes.filter(function(n){return n.toLowerCase().indexOf(q)>=0;}) : nomes;
+  drop.innerHTML = filtrados.slice(0,40).map(function(n){
+    var safe = n.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    return '<div onMouseDown="aliasDropSelect(\''+inpId+'\',\''+safe+'\')"'
+      +' style="padding:7px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid #f5f5f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"'
+      +' onMouseOver="this.style.background=\'#f0f9f4\'" onMouseOut="this.style.background=\'\'">'+n+'</div>';
+  }).join('');
+  if(!filtrados.length) drop.innerHTML='<div style="padding:8px 12px;font-size:12px;color:#aaa">Nenhum resultado — será criado novo</div>';
+  drop.style.display='block';
+}
+function aliasDropSelect(inpId, valor){
+  var inp = R(inpId); if(!inp) return;
+  inp.value = valor;
+  aliasDropHide(inpId);
 }
 
 // ── Badge de conciliação ──
