@@ -2999,15 +2999,18 @@ function impConfirmarImport(){
     var step3=R('imp-step3');
     var aliasDiv=document.createElement('div');
     aliasDiv.style.cssText='margin-top:24px;background:#fff;border-radius:12px;border:1.5px solid var(--bord);padding:20px';
-    var aliasH='<div style="font-size:13px;font-weight:700;margin-bottom:14px">💡 Sugestões de Alias detectadas</div>'
-      +'<p style="font-size:12px;color:#888;margin-bottom:14px">O sistema encontrou nomes no extrato que parecem corresponder a nomes cadastrados. Confirme os vínculos que fizerem sentido:</p>'
+    var allNomesDL = (CLI_HON.concat(RT_EMPRESAS)).map(function(n){return '<option value="'+n.replace(/"/g,'&quot;')+'">'+n+'</option>';}).join('');
+    var aliasH='<datalist id="alias-dl-nomes">'+allNomesDL+'</datalist>'
+      +'<div style="font-size:13px;font-weight:700;margin-bottom:14px">💡 Sugestões de Alias detectadas</div>'
+      +'<p style="font-size:12px;color:#888;margin-bottom:14px">Confirme ou edite o nome do sistema antes de vincular:</p>'
       +'<div id="alias-sug-list">';
     aliasSugestoes.forEach(function(s,si){
+      var safeExt = s.extrato.replace(/'/g,"\\'");
       aliasH+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5;flex-wrap:wrap">'
         +'<span style="font-size:12px;font-weight:600;color:#c0392b;min-width:180px">'+s.extrato+'</span>'
         +'<span style="color:#aaa">→</span>'
-        +'<span style="font-size:12px;color:#27ae60;flex:1">'+s.sistema+'</span>'
-        +'<button onclick="aliasConfirmar('+si+',\''+s.extrato.replace(/'/g,"\\'")+'\')" style="padding:6px 14px;background:#27ae60;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">✓ Confirmar</button>'
+        +'<input id="alias-inp-'+si+'" list="alias-dl-nomes" value="'+s.sistema.replace(/"/g,'&quot;')+'" placeholder="Nome no sistema..." style="flex:1;min-width:160px;border:1.5px solid #e0e0e0;border-radius:7px;padding:5px 10px;font-size:12px;outline:none">'
+        +'<button onclick="aliasConfirmar('+si+',\''+safeExt+'\')" style="padding:6px 14px;background:#27ae60;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">✓ Confirmar</button>'
         +'<button onclick="this.parentElement.remove()" style="padding:6px 10px;background:#f5f5f5;border:none;border-radius:7px;font-size:12px;cursor:pointer;color:#888">✗</button>'
         +'</div>';
     });
@@ -3037,10 +3040,16 @@ function impConfirmarImport(){
 function aliasConfirmar(si, extrato){
   var sug = window._aliasSugestoes && window._aliasSugestoes[si];
   if(!sug) return;
+  // Lê o valor editado pelo usuário no input
+  var inp = R('alias-inp-'+si);
+  var sistema = (inp ? inp.value.trim() : sug.sistema) || sug.sistema;
+  if(!sistema){ showToast('Informe o nome no sistema','#e67e22'); return; }
   if(!ALIASES.some(function(a){return a.extrato.toUpperCase()===sug.extrato.toUpperCase();})){
-    ALIASES.push({extrato:sug.extrato, sistema:sug.sistema});
+    ALIASES.push({extrato:sug.extrato, sistema:sistema});
+    // Se for nome novo, adiciona em CLI_HON
+    if(CLI_HON.indexOf(sistema)<0 && RT_EMPRESAS.indexOf(sistema)<0){ CLI_HON.push(sistema); }
     salvarLocal();
-    showToast('Alias adicionado: '+sug.extrato+' → '+sug.sistema,'#27ae60',3000);
+    showToast('Alias adicionado: '+sug.extrato+' → '+sistema,'#27ae60',3000);
   }
   // Remove o item da lista visual
   var list=R('alias-sug-list');
@@ -3067,16 +3076,19 @@ function rendImpHistorico(){
     html += '</div></div>';
     // Aliases
     if(aliasPendentes.length > 0){
+      var dlId = 'hist-dl-'+si;
+      var allNomesHL = (CLI_HON.concat(RT_EMPRESAS)).map(function(n){return '<option value="'+n.replace(/"/g,'&quot;')+'">'+n+'</option>';}).join('');
       html += '<div style="border-top:1px solid #f5f5f5;padding-top:12px">';
+      html += '<datalist id="'+dlId+'">'+allNomesHL+'</datalist>';
       html += '<div style="font-size:12px;font-weight:700;color:#555;margin-bottom:10px">💡 Aliases sugeridos desta importação:</div>';
       aliasPendentes.forEach(function(a, ai){
         var safeExt = a.extrato.replace(/'/g,"\\'");
-        var safeSis = a.sistema.replace(/'/g,"\\'");
+        var inpId = 'hist-alias-inp-'+si+'-'+ai;
         html += '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #fafafa;flex-wrap:wrap">';
         html += '<span style="font-size:12px;font-weight:600;color:#c0392b;min-width:180px">'+a.extrato+'</span>';
         html += '<span style="color:#ccc;font-size:11px">→</span>';
-        html += '<span style="font-size:12px;color:#27ae60;flex:1">'+a.sistema+'</span>';
-        html += '<button onclick="impHistAliasConfirmar('+si+','+ai+',\''+safeExt+'\',\''+safeSis+'\')" style="padding:5px 12px;background:#27ae60;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">✓ Confirmar</button>';
+        html += '<input id="'+inpId+'" list="'+dlId+'" value="'+a.sistema.replace(/"/g,'&quot;')+'" placeholder="Nome no sistema..." style="flex:1;min-width:160px;border:1.5px solid #e0e0e0;border-radius:7px;padding:4px 9px;font-size:12px;outline:none">';
+        html += '<button onclick="impHistAliasConfirmar('+si+','+ai+',\''+safeExt+'\',\''+inpId+'\')" style="padding:5px 12px;background:#27ae60;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">✓ Confirmar</button>';
         html += '<button onclick="impHistAliasIgnorar('+si+','+ai+')" style="padding:5px 9px;background:#f5f5f5;border:none;border-radius:7px;font-size:11px;cursor:pointer;color:#888">✗</button>';
         html += '</div>';
       });
@@ -3087,14 +3099,21 @@ function rendImpHistorico(){
   el.innerHTML = html;
 }
 
-function impHistAliasConfirmar(si, ai, extrato, sistema){
+function impHistAliasConfirmar(si, ai, extrato, inpId){
+  // inpId é o id do input editável
+  var inp = R(inpId);
+  var sistema = (inp ? inp.value.trim() : '') || (imp_historico[si]&&imp_historico[si].aliases[ai] ? imp_historico[si].aliases[ai].sistema : '');
+  if(!sistema){ showToast('Informe o nome no sistema','#e67e22'); return; }
   if(!ALIASES.some(function(a){return a.extrato.toUpperCase()===extrato.toUpperCase();})){
     ALIASES.push({extrato:extrato, sistema:sistema});
+    if(CLI_HON.indexOf(sistema)<0 && RT_EMPRESAS.indexOf(sistema)<0){ CLI_HON.push(sistema); }
     salvarLocal();
     showToast('Alias adicionado: '+extrato+' → '+sistema,'#27ae60',3000);
   }
-  // Marcar como confirmado no histórico
-  if(imp_historico[si]&&imp_historico[si].aliases[ai]) imp_historico[si].aliases[ai]._confirmado=true;
+  if(imp_historico[si]&&imp_historico[si].aliases[ai]){
+    imp_historico[si].aliases[ai]._confirmado=true;
+    imp_historico[si].aliases[ai].sistema=sistema; // salva o nome editado
+  }
   salvarLocal();
   rendImpHistorico();
 }
