@@ -2712,36 +2712,48 @@ function impRenderLista(){
       origemEntCell = sel(['','Cliente','RT'], t.origem||'', 'onchange="impUpdField('+i+',\'origem\',this.value);impRenderLista()" '+ST);
     }
 
-    // Célula CLIENTE — inclui valor atual mesmo se não está na lista
+    // Célula CLIENTE — input+datalist para permitir novo valor
     var clienteCell = '';
     if(t.tipo==='Entrada'){
       if(t.origem==='Cliente'){
         var cliCur = t.cliente||'';
-        var cliOpts = cliCur && CLI_HON.indexOf(cliCur)<0 ? [cliCur].concat(CLI_HON) : CLI_HON;
-        clienteCell = sel([''].concat(cliOpts), cliCur, 'onchange="impUpdField('+i+',\'cliente\',this.value)" '+ST);
+        var dlId='imp-dl-cli-'+i;
+        clienteCell = '<datalist id="'+dlId+'">'+CLI_HON.map(function(o){return '<option value="'+o.replace(/"/g,'&quot;')+'">';}).join('')+'</datalist>'
+          +'<input type="text" list="'+dlId+'" value="'+cliCur.replace(/"/g,'&quot;')+'" placeholder="Cliente..." '
+          +'oninput="impUpdField('+i+',\'cliente\',this.value)" '
+          +'onblur="impAutoAddAdmin('+i+',\'cliente\',this.value)" '+ST+'>';
       } else if(t.origem==='RT'){
         var rtCur = t.rt||'';
-        var rtOpts = rtCur && RT_EMPRESAS.indexOf(rtCur)<0 ? [rtCur].concat(RT_EMPRESAS) : RT_EMPRESAS;
-        clienteCell = sel([''].concat(rtOpts), rtCur, 'onchange="impUpdField('+i+',\'rt\',this.value)" '+ST);
+        var dlIdRT='imp-dl-rt-'+i;
+        clienteCell = '<datalist id="'+dlIdRT+'">'+RT_EMPRESAS.map(function(o){return '<option value="'+o.replace(/"/g,'&quot;')+'">';}).join('')+'</datalist>'
+          +'<input type="text" list="'+dlIdRT+'" value="'+rtCur.replace(/"/g,'&quot;')+'" placeholder="RT..." '
+          +'oninput="impUpdField('+i+',\'rt\',this.value)" '
+          +'onblur="impAutoAddAdmin('+i+',\'rt\',this.value)" '+ST+'>';
       } else {
         clienteCell = '<span style="color:#ccc;font-size:11px">selecione origem</span>';
       }
     }
 
-    // Célula CATEGORIA (Saída)
+    // Célula CATEGORIA (Saída) — input+datalist
     var categoriaCell = '';
     if(t.tipo==='Saída'){
-      categoriaCell = sel([''].concat(ORIGENS_SAIDA), t.categoria||'', 'onchange="impUpdField('+i+',\'categoria\',this.value);impRenderLista()" '+ST);
+      var dlIdCat='imp-dl-cat-'+i;
+      categoriaCell = '<datalist id="'+dlIdCat+'">'+ORIGENS_SAIDA.map(function(o){return '<option value="'+o.replace(/"/g,'&quot;')+'">';}).join('')+'</datalist>'
+        +'<input type="text" list="'+dlIdCat+'" value="'+(t.categoria||'').replace(/"/g,'&quot;')+'" placeholder="Categoria..." '
+        +'oninput="impUpdField('+i+',\'categoria\',this.value);impRenderLista()" '
+        +'onblur="impAutoAddAdmin('+i+',\'categoria\',this.value)" '+ST+'>';
     }
 
-    // Célula DESPESA (Saída)
+    // Célula DESPESA (Saída) — input+datalist
     var despesaCell = '';
     if(t.tipo==='Saída'){
-      var despOpts = t.categoria && DESP_MAP[t.categoria] && DESP_MAP[t.categoria].length ? DESP_MAP[t.categoria] : DESPESAS;
-      // Permite valor livre também — se despesa atual não está na lista, inclui
+      var despOpts2 = t.categoria && DESP_MAP[t.categoria] && DESP_MAP[t.categoria].length ? DESP_MAP[t.categoria] : DESPESAS;
       var cur = t.despesa||'';
-      var opts = cur && despOpts.indexOf(cur)<0 ? [cur].concat(despOpts) : despOpts;
-      despesaCell = sel([''].concat(opts), cur, 'onchange="impUpdField('+i+',\'despesa\',this.value)" '+ST);
+      var dlIdDesp='imp-dl-desp-'+i;
+      despesaCell = '<datalist id="'+dlIdDesp+'">'+despOpts2.map(function(o){return '<option value="'+o.replace(/"/g,'&quot;')+'">';}).join('')+'</datalist>'
+        +'<input type="text" list="'+dlIdDesp+'" value="'+cur.replace(/"/g,'&quot;')+'" placeholder="Despesa..." '
+        +'oninput="impUpdField('+i+',\'despesa\',this.value)" '
+        +'onblur="impAutoAddAdmin('+i+',\'despesa\',this.value)" '+ST+'>';
     }
 
     var obsCell = '<input type="text" value="'+(t.obs||'')+'" onchange="impUpdField('+i+',\'obs\',this.value)" placeholder="..." style="border:1px solid #e0e0e0;border-radius:6px;padding:3px 6px;font-size:11px;width:100%;min-width:100px;background:#fafafa">';
@@ -2773,7 +2785,7 @@ function impRenderLista(){
   var thead = '<tr style="background:#f8f8f8">';
   thead += TH('DATA');
   if(showTipo) thead += TH('TIPO');
-  if(showEnt){ thead += TH('ORIGEM','90px'); thead += TH('NOME NO EXTRATO'); }
+  if(showEnt){ thead += TH('ORIGEM','90px'); thead += TH('CLIENTE'); }
   if(showSai){ thead += TH('CATEGORIA','110px'); thead += TH('DESPESA'); }
   thead += TH('VALOR');
   if(modo!=='Saída') thead += TH('NF','90px');
@@ -2792,6 +2804,27 @@ function impUpdField(i, campo, val){
   impTxs[i][campo] = val;
   // Se mudou origem, limpa campos dependentes
   if(campo==='origem'){ impTxs[i].cliente=''; impTxs[i].rt=''; impTxs[i].despesa=''; impRenderLista(); }
+}
+function impAutoAddAdmin(i, campo, val){
+  if(!val||!val.trim()) return;
+  val = val.trim();
+  var salvou = false;
+  if(campo==='categoria'){
+    if(ORIGENS_SAIDA.indexOf(val)<0){ ORIGENS_SAIDA.push(val); salvou=true; showToast('✅ Categoria "'+val+'" adicionada em Admin','#27ae60',2500); }
+  } else if(campo==='despesa'){
+    var tx = impTxs[i]; var cat = tx ? tx.categoria : '';
+    if(cat){
+      if(!DESP_MAP[cat]) DESP_MAP[cat]=[];
+      if(DESP_MAP[cat].indexOf(val)<0){ DESP_MAP[cat].push(val); salvou=true; showToast('✅ Despesa "'+val+'" adicionada em '+cat,'#27ae60',2500); }
+    } else {
+      if(DESPESAS.indexOf(val)<0){ DESPESAS.push(val); salvou=true; }
+    }
+  } else if(campo==='cliente'){
+    if(CLI_HON.indexOf(val)<0){ CLI_HON.push(val); salvou=true; showToast('✅ Cliente "'+val+'" adicionado em Admin','#27ae60',2500); }
+  } else if(campo==='rt'){
+    if(RT_EMPRESAS.indexOf(val)<0){ RT_EMPRESAS.push(val); salvou=true; showToast('✅ RT "'+val+'" adicionado em Admin','#27ae60',2500); }
+  }
+  if(salvou) salvarLocal();
 }
 
 function impAprovarTodos(){
