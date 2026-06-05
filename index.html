@@ -2847,10 +2847,19 @@ function impAprovarTodos(){
 function concilNomeNormalizado(nome){
   if(!nome) return '';
   var n = nome.toUpperCase().trim();
-  // Aplica aliases: se nome do extrato bate com alias, retorna nome do sistema
+  // 1. Match exato
   for(var i=0;i<ALIASES.length;i++){
     if(ALIASES[i].extrato.toUpperCase()===n) return ALIASES[i].sistema.toUpperCase();
   }
+  // 2. Match parcial: alias extrato contido no nome (mínimo 5 chars para evitar falsos positivos)
+  var bestLen=0, bestSis=null;
+  for(var i=0;i<ALIASES.length;i++){
+    var ae=ALIASES[i].extrato.toUpperCase();
+    if(ae.length>=5 && n.indexOf(ae)>=0 && ae.length>bestLen){
+      bestLen=ae.length; bestSis=ALIASES[i].sistema.toUpperCase();
+    }
+  }
+  if(bestSis) return bestSis;
   return n;
 }
 function concilParseDate(dataStr){
