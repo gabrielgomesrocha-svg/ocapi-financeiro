@@ -857,7 +857,7 @@ function salvarLocal(){salvarFirebase();}
 function salvarFirebase(){
   if(!fbAuth||!fbAuth.currentUser){return;}
   var cfg={CLI_HON:CLI_HON,RT_EMPRESAS:RT_EMPRESAS,DESPESAS:DESPESAS,DESP_MAP:DESP_MAP,ORIGENS_ENTRADA:ORIGENS_ENTRADA,ORIGENS_SAIDA:ORIGENS_SAIDA,ALIASES:ALIASES};
-  var payload={dados:dados,config:cfg,conciliacoes:conciliacoes,imp_historico:imp_historico,migrated:true};
+  var payload=JSON.parse(JSON.stringify({dados:dados,config:cfg,conciliacoes:conciliacoes,imp_historico:imp_historico,migrated:true}));
   var payloadBytes=new Blob([JSON.stringify(payload)]).size;
   var LIMIT=1000000;
   if(payloadBytes>LIMIT*0.9){
