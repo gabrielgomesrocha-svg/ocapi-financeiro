@@ -2323,6 +2323,8 @@ function mergeFirebaseData(fdata){
   // migração: DataLanc ausente → usa Data de Movimentação (apenas registros antigos)
   var migrou=false;
   dados.forEach(function(r){if(!r.DataLanc&&r.Data){r.DataLanc=r.Data;migrou=true;}});
+  // migração: campo NF (errado) → 'Nota Fiscal' (correto)
+  dados.forEach(function(r){if(r.NF&&!r['Nota Fiscal']){r['Nota Fiscal']=r.NF;delete r.NF;migrou=true;}});
   if(migrou)salvarLocal();
 }
 
