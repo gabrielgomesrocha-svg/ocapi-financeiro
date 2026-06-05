@@ -2766,25 +2766,35 @@ function impRenderLista(){
           +'oninput="impUpdField('+i+',\'cliente\',this.value)" '
           +'onblur="impAutoAddAdmin('+i+',\'cliente\',this.value)" '+ST+'>';
       } else if(t.origem==='RT'){
-        var rtCur = t.rt||'';
-        var dlIdRT='imp-dl-rt-'+i;
-        clienteCell = '<datalist id="'+dlIdRT+'">'+RT_EMPRESAS.map(function(o){return '<option value="'+o.replace(/"/g,'&quot;')+'">';}).join('')+'</datalist>'
-          +'<input type="text" list="'+dlIdRT+'" value="'+rtCur.replace(/"/g,'&quot;')+'" placeholder="RT..." '
-          +'oninput="impUpdField('+i+',\'rt\',this.value)" '
-          +'onblur="impAutoAddAdmin('+i+',\'rt\',this.value)" '+ST+'>';
+        var cliRTCur = t.cliente||'';
+        var dlIdCliRT='imp-dl-cliRT-'+i;
+        clienteCell = '<datalist id="'+dlIdCliRT+'">'+CLI_HON.map(function(o){return '<option value="'+o.replace(/"/g,'&quot;')+'">';}).join('')+'</datalist>'
+          +'<input type="text" list="'+dlIdCliRT+'" value="'+cliRTCur.replace(/"/g,'&quot;')+'" placeholder="Cliente..." '
+          +'oninput="impUpdField('+i+',\'cliente\',this.value)" '
+          +'onblur="impAutoAddAdmin('+i+',\'cliente\',this.value)" '+ST+'>';
       } else {
         clienteCell = '<span style="color:#ccc;font-size:11px">selecione origem</span>';
       }
     }
 
-    // Célula CATEGORIA (Saída) — input+datalist
+    // Célula EMPRESA RT — só para Entradas com origem RT
+    var empresaRTCell = '';
+    if(t.tipo==='Entrada' && t.origem==='RT'){
+      var rtCur = t.rt||'';
+      var dlIdRT='imp-dl-rt-'+i;
+      empresaRTCell = '<datalist id="'+dlIdRT+'">'+RT_EMPRESAS.map(function(o){return '<option value="'+o.replace(/"/g,'&quot;')+'">';}).join('')+'</datalist>'
+        +'<input type="text" list="'+dlIdRT+'" value="'+rtCur.replace(/"/g,'&quot;')+'" placeholder="Empresa RT..." '
+        +'oninput="impUpdField('+i+',\'rt\',this.value)" '
+        +'onblur="impAutoAddAdmin('+i+',\'rt\',this.value)" '+ST+'>';
+    }
+
+    // Célula CATEGORIA (Saída) — select com categorias cadastradas
     var categoriaCell = '';
     if(t.tipo==='Saída'){
-      var dlIdCat='imp-dl-cat-'+i;
-      categoriaCell = '<datalist id="'+dlIdCat+'">'+ORIGENS_SAIDA.map(function(o){return '<option value="'+o.replace(/"/g,'&quot;')+'">';}).join('')+'</datalist>'
-        +'<input type="text" list="'+dlIdCat+'" value="'+(t.categoria||'').replace(/"/g,'&quot;')+'" placeholder="Categoria..." '
-        +'oninput="impUpdField('+i+',\'categoria\',this.value);impRenderLista()" '
-        +'onblur="impAutoAddAdmin('+i+',\'categoria\',this.value)" '+ST+'>';
+      var catOpts = [''].concat(ORIGENS_SAIDA);
+      categoriaCell = '<select onchange="impUpdField('+i+',\'categoria\',this.value);impRenderLista()" '+ST+'>'
+        +catOpts.map(function(o){return '<option value="'+o+'"'+(o===(t.categoria||'')?'selected':'')+'>'+o+'</option>';}).join('')
+        +'</select>';
     }
 
     // Célula DESPESA (Saída) — input+datalist
@@ -2807,11 +2817,12 @@ function impRenderLista(){
     if(showTipo) row += TD('<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:'+tipoBg+';color:'+tipoClr+'">'+t.tipo+'</span>');
     if(showEnt && t.tipo==='Entrada'){
       row += TD(origemEntCell,'min-width:90px');
-      row += TD(clienteCell,'min-width:160px');
+      row += TD(clienteCell,'min-width:140px');
+      row += TD(empresaRTCell,'min-width:140px');
       if(showSai){ row += TD('<span style="color:#eee">—</span>'); row += TD('<span style="color:#eee">—</span>'); }
     }
     if(showSai && t.tipo==='Saída'){
-      if(showEnt){ row += TD('<span style="color:#eee">—</span>'); row += TD('<span style="color:#eee">—</span>'); }
+      if(showEnt){ row += TD('<span style="color:#eee">—</span>'); row += TD('<span style="color:#eee">—</span>'); row += TD('<span style="color:#eee">—</span>'); }
       row += TD(categoriaCell,'min-width:110px');
       row += TD(despesaCell,'min-width:150px');
     }
@@ -2828,7 +2839,7 @@ function impRenderLista(){
   var thead = '<tr style="background:#f8f8f8">';
   thead += TH('DATA');
   if(showTipo) thead += TH('TIPO');
-  if(showEnt){ thead += TH('ORIGEM','90px'); thead += TH('CLIENTE'); }
+  if(showEnt){ thead += TH('ORIGEM','90px'); thead += TH('CLIENTE'); thead += TH('EMPRESA RT'); }
   if(showSai){ thead += TH('CATEGORIA','110px'); thead += TH('DESPESA'); }
   thead += TH('VALOR');
   if(modo!=='Saída') thead += TH('NF','90px');
@@ -2977,7 +2988,7 @@ function impConfirmarImport(){
         Movimentação: tx.tipo,
         Origem: tx.tipo==='Saída' ? (tx.categoria||'') : (tx.origem||'Cliente'),
         Cliente: tx.cliente || '',
-        RT: tx.rt || '',
+        Fornecedor: tx.rt || '',
         Despesa: tx.despesa || '',
         Observações: tx.obs || '',
         nf_emitida: tx.nf==='Sim',
@@ -3316,7 +3327,7 @@ function rendConcil(){
       +'<div><label style="font-size:10px;color:#aaa;font-weight:700;display:block;margin-bottom:3px">NOME (CLIENTE)</label>'
       +'<input id="cedit-nome-'+ci+'" type="text" value="'+(md.Cliente||'').replace(/"/g,'&quot;')+'" list="cedit-nome-list-'+ci+'" placeholder="Nome do cliente..." style="width:100%;box-sizing:border-box;padding:6px 10px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:12px">'
       +'<datalist id="cedit-nome-list-'+ci+'">'+CLI_HON.map(function(n){return '<option value="'+n.replace(/"/g,'&quot;')+'"></option>';}).join('')+'</datalist></div>'
-      +'<div><label style="font-size:10px;color:#aaa;font-weight:700;display:block;margin-bottom:3px">EMPRESA RT</label>'
+      +'<div id="cedit-rt-row-'+ci+'" style="display:'+(md.Origem==='RT'?'block':'none')+'"><label style="font-size:10px;color:#aaa;font-weight:700;display:block;margin-bottom:3px">EMPRESA RT</label>'
       +'<input id="cedit-rt-'+ci+'" type="text" value="'+(md.Fornecedor||'').replace(/"/g,'&quot;')+'" list="cedit-rt-list-'+ci+'" placeholder="Empresa RT..." style="width:100%;box-sizing:border-box;padding:6px 10px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:12px">'
       +'<datalist id="cedit-rt-list-'+ci+'">'+RT_EMPRESAS.map(function(n){return '<option value="'+n.replace(/"/g,'&quot;')+'"></option>';}).join('')+'</datalist></div>'
       +'<div><label style="font-size:10px;color:#aaa;font-weight:700;display:block;margin-bottom:3px">NOTA FISCAL</label>'
@@ -3352,7 +3363,10 @@ function concilToggleEdit(ci){
 }
 
 function concilEditOrigem(ci){
-  // ajusta label do botão editar (sem ação adicional por enquanto)
+  var sel = R('cedit-orig-'+ci);
+  var rtRow = R('cedit-rt-row-'+ci);
+  if(!sel||!rtRow) return;
+  rtRow.style.display = sel.value==='RT' ? 'block' : 'none';
 }
 
 function concilEditNF(ci, nf){
