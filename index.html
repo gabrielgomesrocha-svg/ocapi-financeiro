@@ -3068,23 +3068,26 @@ function rendImpHistorico(){
   if(!imp_historico.length){ el.innerHTML=''; return; }
   var html = '<div style="font-size:13px;font-weight:800;color:#1a1a1a;margin-bottom:16px;padding:0 4px">📋 Histórico de Importações</div>';
   imp_historico.forEach(function(s, si){
-    var corStatus = s.conciliacoes > 0 ? '#e67e22' : '#27ae60';
     var aliasPendentes = (s.aliases||[]).filter(function(a){ return !a._confirmado && !a._ignorado && !ALIASES.some(function(al){return al.extrato.toUpperCase()===a.extrato.toUpperCase();}); });
-    html += '<div style="background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:18px 20px;margin-bottom:14px">';
-    // Header
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">';
-    html += '<div>';
-    html += '<div style="font-size:14px;font-weight:800;color:#1a1a1a">'+s.arquivo+'</div>';
-    html += '<div style="font-size:11px;color:#aaa;margin-top:2px">'+fmtDate(s.data)+' às '+s.hora+'</div>';
+    var temPendencias = aliasPendentes.length > 0;
+    var badges = '';
+    badges += '<span style="background:#f0f9f4;color:#27ae60;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">'+s.importados+' lanç.</span>';
+    if(s.conciliacoes>0) badges += ' <span style="background:#fff8f0;color:#e67e22;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">'+s.conciliacoes+' concil.</span>';
+    if(temPendencias) badges += ' <span style="background:#fff3cd;color:#856404;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">'+aliasPendentes.length+' alias</span>';
+    // Box compacto (sempre visível)
+    html += '<div style="background:#fff;border:1.5px solid var(--bord);border-radius:10px;margin-bottom:10px;overflow:hidden">';
+    html += '<div onclick="impHistToggle('+si+')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;gap:8px;flex-wrap:wrap">';
+    html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+    html += '<span style="font-size:12px;font-weight:700;color:#1a1a1a">'+s.arquivo+'</span>';
+    html += '<span style="font-size:11px;color:#aaa">'+fmtDate(s.data)+' '+s.hora+'</span>';
+    html += '<span>'+badges+'</span>';
     html += '</div>';
-    html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
-    html += '<span style="background:#f0f9f4;color:#27ae60;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700">'+s.importados+' lançamentos</span>';
-    if(s.conciliacoes>0) html += '<span style="background:#fff8f0;color:#e67e22;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700">'+s.conciliacoes+' conciliações</span>';
-    html += '</div></div>';
-    // Aliases
+    html += '<span id="imp-hist-arr-'+si+'" style="font-size:11px;color:#aaa;transition:transform .2s">▼</span>';
+    html += '</div>';
+    // Detalhe (colapsado por padrão)
+    html += '<div id="imp-hist-det-'+si+'" style="display:none;border-top:1px solid #f0f0f0;padding:14px 16px">';
     if(aliasPendentes.length > 0){
-      html += '<div style="border-top:1px solid #f5f5f5;padding-top:12px">';
-      html += '<div style="font-size:12px;font-weight:700;color:#555;margin-bottom:10px">💡 Aliases sugeridos desta importação:</div>';
+      html += '<div style="font-size:12px;font-weight:700;color:#555;margin-bottom:10px">💡 Aliases pendentes:</div>';
       aliasPendentes.forEach(function(a, ai){
         var safeExt = a.extrato.replace(/'/g,"\\'");
         var inpId = 'hist-alias-inp-'+si+'-'+ai;
@@ -3096,11 +3099,22 @@ function rendImpHistorico(){
         html += '<button onclick="impHistAliasIgnorar('+si+','+ai+')" style="padding:5px 9px;background:#f5f5f5;border:none;border-radius:7px;font-size:11px;cursor:pointer;color:#888">✗</button>';
         html += '</div>';
       });
-      html += '</div>';
+    } else {
+      html += '<div style="font-size:12px;color:#aaa;font-style:italic">Nenhum alias pendente nesta importação.</div>';
     }
+    html += '</div>';
     html += '</div>';
   });
   el.innerHTML = html;
+}
+
+function impHistToggle(si){
+  var det = R('imp-hist-det-'+si);
+  var arr = R('imp-hist-arr-'+si);
+  if(!det) return;
+  var aberto = det.style.display !== 'none';
+  det.style.display = aberto ? 'none' : 'block';
+  if(arr) arr.style.transform = aberto ? '' : 'rotate(180deg)';
 }
 
 function impHistAliasConfirmar(si, ai, extrato, inpId){
