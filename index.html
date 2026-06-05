@@ -523,15 +523,24 @@ tr.row-pago td{opacity:.75}
 
   <!-- HISTORICO / CONTROLE -->
   <div id="p-hist" class="page">
-    <div class="filters">
-      <input type="text" id="h-q" placeholder="&#128269; Buscar..." oninput="rendHist()">
-      <select id="h-ano" onchange="rendHist()"></select>
-      <select id="h-mes" onchange="rendHist()"></select>
-      <button id="h-btn-entrada" class="btn btn-out" onclick="setHMovFilt('Entrada')">&#8599; Entrada</button>
-      <button id="h-btn-saida" class="btn btn-out" onclick="setHMovFilt('Saída')">&#8600; Saída</button>
-      <button id="h-btn-receber" class="btn btn-out" onclick="setHFutFilt('receber')">&#8599; A Receber</button>
-      <button id="h-btn-pagar" class="btn btn-out" onclick="setHFutFilt('pagar')">&#8600; A Pagar</button>
-      <button class="btn btn-out" onclick="clearHFilt()">&#10005; Limpar</button>
+    <div class="filters" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:16px 20px">
+      <input type="text" id="h-q" placeholder="&#128269; Buscar..." oninput="rendHist()" style="flex:1;min-width:160px;max-width:240px">
+      <select id="h-ano" onchange="rendHist()" style="min-width:90px"></select>
+      <select id="h-mes" onchange="rendHist()" style="min-width:90px"></select>
+      <!-- Toggle Tipo -->
+      <div style="display:flex;border:1.5px solid #e0e0e0;border-radius:10px;overflow:hidden;background:#f7f7f7">
+        <button id="h-tipo-todos"   onclick="setHMovFilt('')"       style="padding:7px 14px;border:none;background:#1a1a1a;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Todos</button>
+        <button id="h-tipo-entrada" onclick="setHMovFilt('Entrada')" style="padding:7px 14px;border:none;background:transparent;color:#555;font-size:12px;font-weight:700;cursor:pointer">&#8599; Entrada</button>
+        <button id="h-tipo-saida"   onclick="setHMovFilt('Saída')"   style="padding:7px 14px;border:none;background:transparent;color:#555;font-size:12px;font-weight:700;cursor:pointer">&#8600; Sa&#237;da</button>
+      </div>
+      <!-- Toggle Status -->
+      <div style="display:flex;border:1.5px solid #e0e0e0;border-radius:10px;overflow:hidden;background:#f7f7f7">
+        <button id="h-stat-todos"    onclick="setHFutFilt('')"        style="padding:7px 14px;border:none;background:#1a1a1a;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Todos</button>
+        <button id="h-stat-receber"  onclick="setHFutFilt('receber')" style="padding:7px 14px;border:none;background:transparent;color:#555;font-size:12px;font-weight:700;cursor:pointer">A Receber</button>
+        <button id="h-stat-pagar"    onclick="setHFutFilt('pagar')"   style="padding:7px 14px;border:none;background:transparent;color:#555;font-size:12px;font-weight:700;cursor:pointer">A Pagar</button>
+        <button id="h-stat-pago"     onclick="setHFutFilt('pago')"    style="padding:7px 14px;border:none;background:transparent;color:#555;font-size:12px;font-weight:700;cursor:pointer">Pago</button>
+      </div>
+      <button class="btn btn-out" onclick="clearHFilt()" style="white-space:nowrap">&#10005; Limpar</button>
     </div>
     <div class="tbl-wrap">
       <div class="tbl-head"><h3>Lan&ccedil;amentos</h3><span id="h-count" style="font-size:12px;color:#888"></span></div>
@@ -1412,21 +1421,21 @@ function rendChart(divId,legId,mov,dd){
 }
 var hSortCol='Data',hSortDir=-1,hFutFilt='',hMovFilt='';
 function setHSort(col){if(hSortCol===col){hSortDir*=-1;}else{hSortCol=col;hSortDir=(col==='Pago'||col==='NFem')?1:-1;}rendHist();}
+function _updTipoToggle(){
+  var ativ='background:#1a1a1a;color:#fff;', inativ='background:transparent;color:#555;';
+  var map={'':'h-tipo-todos','Entrada':'h-tipo-entrada','Saída':'h-tipo-saida'};
+  Object.keys(map).forEach(function(k){var b=R(map[k]);if(b)b.style.cssText='padding:7px 14px;border:none;font-size:12px;font-weight:700;cursor:pointer;'+(hMovFilt===k?ativ:inativ);});
+}
+function _updStatToggle(){
+  var ativ='background:#1a1a1a;color:#fff;', inativ='background:transparent;color:#555;';
+  var map={'':'h-stat-todos','receber':'h-stat-receber','pagar':'h-stat-pagar','pago':'h-stat-pago'};
+  Object.keys(map).forEach(function(k){var b=R(map[k]);if(b)b.style.cssText='padding:7px 14px;border:none;font-size:12px;font-weight:700;cursor:pointer;'+(hFutFilt===k?ativ:inativ);});
+}
 function setHMovFilt(v){
-  hMovFilt=(hMovFilt===v)?'':v;
-  ['Entrada','Saída'].forEach(function(k){
-    var id=k==='Entrada'?'h-btn-entrada':'h-btn-saida';
-    var btn=R(id);if(btn)btn.className='btn '+(hMovFilt===k?'btn-dark':'btn-out');
-  });
-  rendHist();
+  hMovFilt=v; _updTipoToggle(); rendHist();
 }
 function setHFutFilt(v){
-  hFutFilt=(hFutFilt===v)?'':v;
-  ['receber','pagar'].forEach(function(k){
-    var btn=R('h-btn-'+k);
-    if(btn)btn.className='btn '+(hFutFilt===k?'btn-dark':'btn-out');
-  });
-  rendHist();
+  hFutFilt=v; _updStatToggle(); rendHist();
 }
 function getHFilt(){
   var q=(R('h-q')?R('h-q').value||'':'').toLowerCase();
@@ -1436,10 +1445,17 @@ function getHFilt(){
   return dados.filter(function(r){
     if(hFutFilt==='receber'){
       if(r['Movimentação']!=='Entrada')return false;
+      if(r.pago)return false;
       if(!r.Data||r.Data<=td)return false;
     } else if(hFutFilt==='pagar'){
       if(r['Movimentação']!=='Saída')return false;
+      if(r.pago)return false;
       if(!r.Data||r.Data<=td)return false;
+    } else if(hFutFilt==='pago'){
+      if(!r.pago)return false;
+      if(hMovFilt&&r['Movimentação']!==hMovFilt)return false;
+      if(ano&&String(r.Ano)!==ano)return false;
+      if(mes&&String(getMesNum(r))!==mes)return false;
     } else {
       if(hMovFilt&&r['Movimentação']!==hMovFilt)return false;
       if(ano&&String(r.Ano)!==ano)return false;
@@ -2014,8 +2030,7 @@ function toggleSidebar(){
 function clearHFilt(){
   ['h-q','h-ano','h-mes'].forEach(function(id){var e=R(id);if(e)e.value='';});
   hFutFilt='';hMovFilt='';
-  ['receber','pagar'].forEach(function(k){var b=R('h-btn-'+k);if(b)b.className='btn btn-out';});
-  ['h-btn-entrada','h-btn-saida'].forEach(function(id){var b=R(id);if(b)b.className='btn btn-out';});
+  _updTipoToggle(); _updStatToggle();
   rendHist();
 }
 var hSelected=new Set();
