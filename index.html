@@ -3331,6 +3331,12 @@ function rendConcil(){
   });
   h += '</div>';
   cont.innerHTML=h;
+  // Ativa autocomplete nos campos de edição
+  conciliacoes.forEach(function(c,ci){
+    if(c.status!=='pendente') return;
+    setupAC('cedit-nome-'+ci,'cedit-nome-list-'+ci,function(){return CLI_HON;});
+    setupAC('cedit-rt-'+ci,'cedit-rt-list-'+ci,function(){return RT_EMPRESAS;});
+  });
 }
 function concilToggleEdit(ci){
   var el = R('concil-edit-'+ci);
