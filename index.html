@@ -3312,7 +3312,7 @@ function rendConcil(){
       +'<datalist id="cedit-rt-list-'+ci+'">'+RT_EMPRESAS.map(function(n){return '<option value="'+n.replace(/"/g,'&quot;')+'"></option>';}).join('')+'</datalist></div>'
       +'<div><label style="font-size:10px;color:#aaa;font-weight:700;display:block;margin-bottom:3px">NOTA FISCAL</label>'
       +'<div style="display:flex;gap:5px">'
-      +['Não','Sim','A definir'].map(function(nf){var sel=(md.NF||'Não')===nf;return '<button onclick="concilEditNF('+ci+',\''+nf+'\')" id="cedit-nf-'+ci+'-'+nf.replace(/ /g,'_')+'" style="flex:1;padding:5px 4px;border-radius:6px;border:1.5px solid '+(sel?'#1a1a1a':'#e0e0e0')+';background:'+(sel?'#1a1a1a':'#fff')+';color:'+(sel?'#fff':'#666')+';font-size:11px;font-weight:700;cursor:pointer">'+(nf)+'</button>';}).join('')
+      +['Não','Sim','A definir'].map(function(nf){var sel=(md['Nota Fiscal']||'Não')===nf;return '<button onclick="concilEditNF('+ci+',\''+nf+'\')" id="cedit-nf-'+ci+'-'+nf.replace(/ /g,'_')+'" style="flex:1;padding:5px 4px;border-radius:6px;border:1.5px solid '+(sel?'#1a1a1a':'#e0e0e0')+';background:'+(sel?'#1a1a1a':'#fff')+';color:'+(sel?'#fff':'#666')+';font-size:11px;font-weight:700;cursor:pointer">'+(nf)+'</button>';}).join('')
       +'</div></div>'
       +'<div><label style="font-size:10px;color:#aaa;font-weight:700;display:block;margin-bottom:3px">VALOR (R$)</label>'
       +'<input id="cedit-val-'+ci+'" type="text" value="'+mdValFmt.replace('R$ ','')+'" style="width:100%;box-sizing:border-box;padding:6px 10px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:12px"></div>'
@@ -3364,7 +3364,7 @@ function concilEditSalvar(ci){
   var rtI   = R('cedit-rt-'+ci);
   var valI  = R('cedit-val-'+ci);
   var panel = R('concil-edit-'+ci);
-  var nf    = (panel && panel.dataset.nf) || d.NF || 'Não';
+  var nf    = (panel && panel.dataset.nf) || d['Nota Fiscal'] || 'Não';
   if(nomeI) d.Cliente    = nomeI.value.trim();
   if(rtI)   d.Fornecedor = rtI.value.trim();
   if(orig){
@@ -3373,7 +3373,7 @@ function concilEditSalvar(ci){
     d.Movimentação = novaOrigem==='Cliente'||novaOrigem==='RT' ? 'Entrada' : 'Saída';
     if(novaOrigem!=='Cliente'&&novaOrigem!=='RT') d.Despesa=(nomeI?nomeI.value.trim():'');
   }
-  d.NF = nf;
+  d['Nota Fiscal'] = nf;
   if(valI){
     var vStr = valI.value.replace(/\./g,'').replace(',','.');
     var vNum = parseFloat(vStr);
