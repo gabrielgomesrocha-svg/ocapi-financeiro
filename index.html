@@ -554,6 +554,7 @@ tr.row-pago td{opacity:.75}
         <th id="h-th-DataLanc" onclick="setHSort('DataLanc')" title="Data de Lançamento">Lan&ccedil;amento <span class="sort-arrow">↕</span></th>
         <th id="h-th-Data" onclick="setHSort('Data')" title="Data de Movimentação Financeira">Movimenta&ccedil;&atilde;o <span class="sort-arrow">↓</span></th>
         <th id="h-th-Tipo" onclick="setHSort('Tipo')">Tipo <span class="sort-arrow">↕</span></th>
+        <th id="h-th-Banco" onclick="setHSort('Banco')">Banco <span class="sort-arrow">↕</span></th>
         <th id="h-th-Origem" onclick="setHSort('Origem')">Categoria <span class="sort-arrow">↕</span></th>
         <th id="h-th-Cliente" onclick="setHSort('Cliente')">Despesa <span class="sort-arrow">↕</span></th>
         <th id="h-th-RT" onclick="setHSort('RT')">Empresa RT <span class="sort-arrow">↕</span></th>
@@ -683,6 +684,15 @@ tr.row-pago td{opacity:.75}
       </div>
       <!-- STEP 1: Upload -->
       <div id="imp-step1">
+        <!-- Seletor de conta -->
+        <div style="margin-bottom:20px">
+          <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:10px">Qual conta você está importando?</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button id="imp-banco-pj" onclick="impSetBanco('Inter PJ')" style="padding:10px 22px;border-radius:10px;border:2px solid #1a1a1a;background:#1a1a1a;color:#fff;font-size:13px;font-weight:700;cursor:pointer">Inter PJ</button>
+            <button id="imp-banco-dalila" onclick="impSetBanco('Inter Dalila')" style="padding:10px 22px;border-radius:10px;border:2px solid #ddd;background:#fff;color:#555;font-size:13px;font-weight:700;cursor:pointer">Inter Dalila</button>
+          </div>
+          <div id="imp-banco-label" style="font-size:12px;color:#27ae60;margin-top:8px;display:none">✓ Conta selecionada</div>
+        </div>
         <div id="imp-dropzone" onclick="document.getElementById('imp-file-input').click()" style="border:2px dashed #ddd;border-radius:16px;padding:48px 24px;text-align:center;cursor:pointer;background:#fafafa;transition:all .2s">
           <div style="font-size:40px;margin-bottom:12px">📄</div>
           <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:6px">Clique para selecionar o PDF</div>
@@ -1482,6 +1492,7 @@ function getHFilt(){
   var d=hSortDir;
   if(hSortCol==='Data'){return d*(a.Data||'').localeCompare(b.Data||'');}
   if(hSortCol==='Tipo'){return d*(a['Movimentação']||'').localeCompare(b['Movimentação']||'');}
+  if(hSortCol==='Banco'){return d*(a.Banco||'').localeCompare(b.Banco||'');}
   if(hSortCol==='Origem'){return d*(a.Origem||'').localeCompare(b.Origem||'');}
   if(hSortCol==='Cliente'){return d*(a.Cliente||'').localeCompare(b.Cliente||'');}
   if(hSortCol==='RT'){return d*(a.Fornecedor||'').localeCompare(b.Fornecedor||'');}
@@ -1512,6 +1523,7 @@ function rendHist(){
       '<td style="white-space:nowrap;color:#aaa;font-size:12px">'+(r.DataLanc?fmtDate(r.DataLanc):'—')+'</td>'+
       '<td style="white-space:nowrap">'+fmtDate(r.Data)+'</td>'+
       '<td><span class="badge badge-'+(isE?'in':'out')+'">'+(isE?'Entrada':'Saída')+'</span></td>'+
+      '<td style="white-space:nowrap;color:#888;font-size:12px">'+(r.Banco||'—')+'</td>'+
       '<td>'+(r.Origem||'—')+'</td>'+
       '<td>'+(r.Cliente||r.Despesa||'—')+'</td>'+
       '<td>'+(r.Fornecedor||r.RT||'—')+'</td>'+
@@ -1536,7 +1548,7 @@ function rendHist(){
     body.appendChild(tr);
   });
   // Update sort indicators
-  ['DataLanc','Data','Tipo','Origem','Cliente','RT','Parcela','Valor','Pago','NF','NFem','Obs'].forEach(function(c){
+  ['DataLanc','Data','Tipo','Banco','Origem','Cliente','RT','Parcela','Valor','Pago','NF','NFem','Obs'].forEach(function(c){
     var el=document.getElementById('h-th-'+c);if(!el)return;
     var arrow=el.querySelector('.sort-arrow');if(!arrow)return;
     arrow.textContent=(hSortCol===c)?(hSortDir===1?'↑':'↓'):'↕';
@@ -2399,6 +2411,7 @@ fbAuth.onAuthStateChanged(function(user){
 // ============================================================
 var impTxs = [];       // transações extraídas do PDF
 var impFiltroAtual = 'todos';
+var impBancoSelecionado = 'Inter PJ'; // padrão
 var impRegras = [];    // regras aprendidas (salvas no Firebase)
 
 // Padrões fixos conhecidos
@@ -2547,7 +2560,8 @@ function impExtrairTransacoes(texto){
       classificacao: '?',
       origem: '',
       origemSugerida: '',
-      confianca: 0
+      confianca: 0,
+      banco: impBancoSelecionado || ''
     });
   });
 
@@ -2987,6 +3001,7 @@ function impConfirmarImport(){
         Valor: String(tx.valor).replace('.',','),
         Movimentação: tx.tipo,
         Origem: tx.tipo==='Saída' ? (tx.categoria||'') : (tx.origem||'Cliente'),
+        Banco: impBancoSelecionado || '',
         Cliente: tx.cliente || '',
         Fornecedor: tx.rt || '',
         Despesa: tx.despesa || '',
@@ -3476,7 +3491,8 @@ function concilRejeitar(ci){
     Valor:String(tx.valor).replace('.',','),
     Movimentação:tx.tipo,
     Origem:tx.tipo==='Saída'?(tx.categoria||''):(tx.origem||'Cliente'),
-    Cliente:tx.cliente||'',RT:tx.rt||'',Despesa:tx.despesa||'',
+    Banco:tx.banco||impBancoSelecionado||'',
+    Cliente:tx.cliente||'',Fornecedor:tx.rt||'',Despesa:tx.despesa||'',
     Observações:tx.obs||'',nf_emitida:tx.nf==='Sim',
     pago:true,
     _ts:Date.now(),fonte_import:'Extrato Banco Inter'
@@ -3487,6 +3503,15 @@ function concilRejeitar(ci){
   rendConcil();
 }
 
+function impSetBanco(conta){
+  impBancoSelecionado = conta;
+  var pj = R('imp-banco-pj'), dal = R('imp-banco-dalila'), lbl = R('imp-banco-label');
+  var ativ = 'padding:10px 22px;border-radius:10px;border:2px solid #1a1a1a;background:#1a1a1a;color:#fff;font-size:13px;font-weight:700;cursor:pointer';
+  var inativ = 'padding:10px 22px;border-radius:10px;border:2px solid #ddd;background:#fff;color:#555;font-size:13px;font-weight:700;cursor:pointer';
+  if(pj) pj.style.cssText = conta==='Inter PJ' ? ativ : inativ;
+  if(dal) dal.style.cssText = conta==='Inter Dalila' ? ativ : inativ;
+  if(lbl){ lbl.textContent = '✓ '+conta+' selecionado'; lbl.style.display='block'; }
+}
 function impVoltarStep1(){
   impTxs = [];
   R('imp-step2').style.display='none';
