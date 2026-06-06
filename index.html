@@ -2816,13 +2816,13 @@ function impDividirRT(i){
       }).join('')+
       '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px">'+
         '<button onclick="impDivAddLinha()" style="border:1px dashed #3498db;background:#eaf4fd;color:#2980b9;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Cliente</button>'+
-        '<span style="font-size:12px;color:'+(ok?'#27ae60':resto<0?'#c0392b':'#e67e22')+';font-weight:700">'+
+        '<span id="imp-div-status" style="font-size:12px;color:'+(ok?'#27ae60':resto<0?'#c0392b':'#e67e22')+';font-weight:700">'+
           (ok?'✓ Soma ok':'Restam: '+fmt(Math.abs(resto))+(resto<0?' (excede)':''))+
         '</span>'+
       '</div>'+
       '<div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">'+
         '<button onclick="impDivCancelar()" style="padding:9px 20px;border:1.5px solid #ddd;background:#fff;border-radius:9px;font-size:13px;cursor:pointer">Cancelar</button>'+
-        '<button onclick="impDivConfirmar('+i+')" style="padding:9px 20px;border:none;background:'+(ok?'#1a1a1a':'#aaa')+';color:#fff;border-radius:9px;font-size:13px;font-weight:700;cursor:'+(ok?'pointer':'not-allowed')+'">Confirmar divisão</button>'+
+        '<button id="imp-div-confirmar" onclick="impDivConfirmar('+i+')" style="padding:9px 20px;border:none;background:'+(ok?'#1a1a1a':'#aaa')+';color:#fff;border-radius:9px;font-size:13px;font-weight:700;cursor:'+(ok?'pointer':'not-allowed')+'">Confirmar divisão</button>'+
       '</div>';
   }
 
@@ -2833,12 +2833,12 @@ function impDividirRT(i){
   window.impDivAddLinha = function(){
     window._impDivPartes.forEach(function(p,pi){p.cliente=document.getElementById('imp-div-cli-'+pi).value;p.valor=parseFloat((document.getElementById('imp-div-val-'+pi).value||'0').replace(',','.'))||0;});
     window._impDivPartes.push({cliente:'',valor:''});
-    renderBox();
+    renderBox();updateStatus();
   };
   window.impDivRemover = function(pi){
     window._impDivPartes.forEach(function(p,j){p.cliente=document.getElementById('imp-div-cli-'+j).value;p.valor=parseFloat((document.getElementById('imp-div-val-'+j).value||'0').replace(',','.'))||0;});
     window._impDivPartes.splice(pi,1);
-    renderBox();
+    renderBox();updateStatus();
   };
   window.impDivCancelar = function(){overlay.remove();};
   window.impDivConfirmar = function(idx){
@@ -2859,13 +2859,23 @@ function impDividirRT(i){
     showToast(msg,'#27ae60',3500);
   };
 
-  box.addEventListener('input', function(){
+  function updateStatus(){
+    var somaAtual=0;
     window._impDivPartes.forEach(function(p,pi){
       var c=document.getElementById('imp-div-cli-'+pi);var v=document.getElementById('imp-div-val-'+pi);
-      if(c)p.cliente=c.value;if(v)p.valor=parseFloat((v.value||'0').replace(',','.'))||0;
+      if(c)p.cliente=c.value;
+      var val=parseFloat((v?v.value||'0':'0').replace(',','.'))||0;
+      p.valor=val; somaAtual+=val;
     });
-    renderBox();
-  });
+    var resto=Math.round((total-somaAtual)*100)/100;
+    var ok=Math.abs(resto)<0.01;
+    var status=document.getElementById('imp-div-status');
+    if(status) status.textContent=ok?'✓ Soma ok':'Restam: '+fmt(Math.abs(resto))+(resto<0?' (excede)':'');
+    if(status) status.style.color=ok?'#27ae60':resto<0?'#c0392b':'#e67e22';
+    var btnConf=document.getElementById('imp-div-confirmar');
+    if(btnConf){btnConf.style.background=ok?'#1a1a1a':'#aaa';btnConf.style.cursor=ok?'pointer':'not-allowed';}
+  }
+  box.addEventListener('input', updateStatus);
 
   overlay.appendChild(box);
   renderBox();
