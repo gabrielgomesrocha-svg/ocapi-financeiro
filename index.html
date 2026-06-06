@@ -3044,7 +3044,7 @@ function impConfirmarImport(){
       var ano = parseInt(tx.data.split('-')[0]);
       var mes = parseInt(tx.data.split('-')[1]);
       var novo = {
-        Data: tx.data, Ano: ano, Mês: mes,
+        Data: tx.data, DataLanc: today(), Ano: ano, Mês: mes,
         Descrição: tx.descricao,
         Valor: String(tx.valor).replace('.',','),
         Movimentação: tx.tipo,
