@@ -2415,7 +2415,12 @@ function mergeFirebaseData(fdata){
   var honIdx=ORIGENS_ENTRADA.indexOf('Honorário');
   if(honIdx>=0){if(ORIGENS_ENTRADA.indexOf('Cliente')<0)ORIGENS_ENTRADA[honIdx]='Cliente';else ORIGENS_ENTRADA.splice(honIdx,1);}
   // migração: defaults para pago/nf_emitida em registros históricos
-  dados.forEach(function(r){if(r.pago===undefined)r.pago=true;if(r.nf_emitida===undefined)r.nf_emitida=true;});
+  dados.forEach(function(r){
+    if(r.pago===undefined)r.pago=true;
+    if(r.nf_emitida===undefined){r.nf_emitida=r['Nota Fiscal']==='Sim'?false:true;}
+    // Corrigir registros com NF=Sim marcados incorretamente como já emitidos
+    if(r['Nota Fiscal']==='Sim'&&r.nf_emitida===true)r.nf_emitida=false;
+  });
   // migração: DataLanc ausente → usa Data de Movimentação (apenas registros antigos)
   var migrou=false;
   dados.forEach(function(r){if(!r.DataLanc&&r.Data){r.DataLanc=r.Data;migrou=true;}});
