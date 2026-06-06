@@ -1750,7 +1750,7 @@ function rendAlertas(){
       html+='<td style="padding:11px 16px"><span class="badge badge-'+(isE?'in':'out')+'">'+(isE?'Entrada':'Saída')+'</span></td>';
       html+='<td style="padding:11px 16px;max-width:200px"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(r.Cliente||r.Fornecedor||r.Origem||'—')+'</div><div style="font-size:11px;color:#aaa">'+(r.Origem||'')+'</div></td>';
       html+='<td style="padding:11px 16px;text-align:right;font-weight:700;color:'+(isE?'#27ae60':'#c0392b')+'">'+fmt(r.Valor)+'</td>';
-      html+='<td style="padding:11px 16px;text-align:center"><button class="chk-btn nf-chk" onclick="alertToggleNF('+ri+',this)" title="Confirmar emissão de NF">✓</button></td>';
+      html+='<td style="padding:11px 16px;text-align:center;display:flex;justify-content:center;align-items:center"><button class="chk-btn nf-chk" onclick="alertToggleNF('+ri+',this)" title="Confirmar emissão de NF">✓</button></td>';
       html+='</tr>';
     });
     html+='</tbody></table></div>';
@@ -2418,8 +2418,6 @@ function mergeFirebaseData(fdata){
   dados.forEach(function(r){
     if(r.pago===undefined)r.pago=true;
     if(r.nf_emitida===undefined){r.nf_emitida=r['Nota Fiscal']==='Sim'?false:true;}
-    // Corrigir registros com NF=Sim marcados incorretamente como já emitidos
-    if(r['Nota Fiscal']==='Sim'&&r.nf_emitida===true)r.nf_emitida=false;
   });
   // migração: DataLanc ausente → usa Data de Movimentação (apenas registros antigos)
   var migrou=false;
