@@ -293,9 +293,10 @@ tr.row-pago td{opacity:.75}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
         <span class="sb-link-label">Controle</span>
       </a>
-      <a class="sb-link" onclick="showPage('p-alertas',this)">
+      <a class="sb-link" onclick="showPage('p-alertas',this)" style="position:relative">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <span class="sb-link-label">Alertas</span>
+        <span id="sb-alertas-badge" style="display:none;position:absolute;top:6px;right:8px;background:#c0392b;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;min-width:18px;text-align:center"></span>
       </a>
       <a class="sb-link" onclick="showPage('p-importar',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -1672,6 +1673,14 @@ function saveEdit(){
   r.nf_emitida=R('em-nf-emitida').checked;
   salvarLocal();closeEdit();rendAll();showToast('✓ Lançamento atualizado');
 }
+function atualizarAlertasBadge(){
+  var t=today();
+  var pagPend=dados.filter(function(r){return r.Data&&r.Data<=t&&!r.pago;}).length;
+  var nfPend=dados.filter(function(r){return r['Nota Fiscal']==='Sim'&&!r.nf_emitida;}).length;
+  var total=pagPend+nfPend;
+  var badge=R('sb-alertas-badge');
+  if(badge){if(total>0){badge.style.display='block';badge.textContent=total;}else badge.style.display='none';}
+}
 function rendAlertas(){
   var body=R('alerta-body');if(!body)return;
   var t=today();
@@ -1679,6 +1688,7 @@ function rendAlertas(){
   var pagPend=dados.filter(function(r){return r.Data&&r.Data<=t&&!r.pago;});
   /* Section 2: NF a emitir — NF='Sim' e nf_emitida=false */
   var nfPend=dados.filter(function(r){return r['Nota Fiscal']==='Sim'&&!r.nf_emitida;});
+  atualizarAlertasBadge();
   var html='';
   /* --- Pagamentos Pendentes --- */
   html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">';
