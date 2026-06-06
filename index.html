@@ -1520,6 +1520,7 @@ function getHFilt(){
     return true;
   }).sort(function(a,b){
   var d=hSortDir;
+  if(hSortCol==='DataLanc'){return d*(a.DataLanc||'').localeCompare(b.DataLanc||'');}
   if(hSortCol==='Data'){return d*(a.Data||'').localeCompare(b.Data||'');}
   if(hSortCol==='Tipo'){return d*(a['Movimentação']||'').localeCompare(b['Movimentação']||'');}
   if(hSortCol==='Banco'){return d*(a.Banco||'').localeCompare(b.Banco||'');}
