@@ -896,7 +896,7 @@ function salvarLocal(){salvarFirebase();}
 function salvarFirebase(){
   if(!fbAuth||!fbAuth.currentUser){return;}
   var cfg={CLI_HON:CLI_HON,RT_EMPRESAS:RT_EMPRESAS,DESPESAS:DESPESAS,DESP_MAP:DESP_MAP,ORIGENS_ENTRADA:ORIGENS_ENTRADA,ORIGENS_SAIDA:ORIGENS_SAIDA,ALIASES:ALIASES};
-  var payload=JSON.parse(JSON.stringify({dados:dados,config:cfg,conciliacoes:conciliacoes,imp_historico:imp_historico,migrated:true}));
+  var payload=JSON.parse(JSON.stringify({dados:dados,config:cfg,conciliacoes:conciliacoes,imp_historico:imp_historico,concilNomesIgnorados:concilNomesIgnorados,migrated:true}));
   var payloadBytes=new Blob([JSON.stringify(payload)]).size;
   var LIMIT=1000000;
   if(payloadBytes>LIMIT*0.9){
@@ -917,6 +917,7 @@ var ORIGENS_ENTRADA=["Cliente", "RT"];
 var ALIASES=[]; // [{extrato:'TEREZA',sistema:'Terezinha Magalhães'}]
 var conciliacoes=[]; // [{tx:{...}, match:{idx,d}, status:'pendente'}]
 var imp_historico=[]; // [{id,data,arquivo,importados,conciliacoes,aliases:[]}]
+var concilNomesIgnorados=[]; // [['Nome A','Nome B'], ...] pares ignorados na aba Conciliar Nomes
 var MES_NUM={'Janeiro':1,'Fevereiro':2,'Março':3,'Abril':4,'Maio':5,'Junho':6,'Julho':7,'Agosto':8,'Setembro':9,'Outubro':10,'Novembro':11,'Dezembro':12};
 function getMesNum(r){var m=r.Mês;if(!m)return 0;if(typeof m==='number')return m;return MES_NUM[m]||parseInt(m)||0;}
 var dashMode='mes_atual',dashAno='',dashFrom='',dashTo='',dashUltPage=1;
@@ -1820,7 +1821,11 @@ function renderAdmConciliar(cont){
   var threshold=0.72;
   var totalGrupos=0;
   categorias.forEach(function(cat){
-    var grupos=agruparSimilares(cat.lista,threshold);
+    var grupos=agruparSimilares(cat.lista,threshold).filter(function(grupo){
+      return !concilNomesIgnorados.some(function(ig){
+        return grupo.every(function(n){return ig.indexOf(n)>=0;})&&ig.every(function(n){return grupo.indexOf(n)>=0;});
+      });
+    });
     totalGrupos+=grupos.length;
     var sec=document.createElement('div');
     sec.style.cssText='margin-bottom:28px';
@@ -1850,6 +1855,7 @@ function renderAdmConciliar(cont){
           '<label style="font-size:12px;color:#666;font-weight:600;white-space:nowrap">Nome canônico:</label>'+
           '<select id="concil-sel-'+cat.listaNome+'-'+gi+'" style="flex:1;min-width:180px;padding:6px 10px;border:1.5px solid #ddd;border-radius:7px;font-size:13px">'+optsHtml+'</select>'+
           '<button onclick="admUnificar(\''+cat.campo+'\',\''+cat.listaNome+'\',\'concil-sel-'+cat.listaNome+'-'+gi+'\')" style="padding:7px 16px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Unificar</button>'+
+          '<button onclick="admIgnorarGrupo('+JSON.stringify(grupo)+')" style="padding:7px 12px;background:transparent;color:#aaa;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap" title="Ignorar — não são nomes duplicados">✕ Ignorar</button>'+
         '</div>';
       sec.appendChild(card);
     });
@@ -1876,6 +1882,11 @@ function admUnificar(campo,listaNome,selId){
   variantes.forEach(function(v){var i=lista.indexOf(v);if(i>=0)lista.splice(i,1);});
   salvarLocal();rendAdmin();
   showToast('✓ '+total+' registro(s) unificados para "'+canonico+'"','#27ae60',3500);
+}
+function admIgnorarGrupo(grupo){
+  concilNomesIgnorados.push(grupo);
+  salvarLocal();rendAdmin();
+  showToast('Grupo ignorado — não aparecerá mais','#888',2500);
 }
 var aLabels={conciliar:'🔗 Conciliar Nomes',cli_hon:'Clientes',rt_emp:'RT',origens_e:'Origens de Entrada',origens_s:'Origens de Saída',aliases:'Aliases de Conciliação'};
 function rendAdmin(){
@@ -2515,6 +2526,7 @@ function mergeFirebaseData(fdata){
   }
   if(fdata&&fdata.conciliacoes){conciliacoes=fdata.conciliacoes;}
   if(fdata&&fdata.imp_historico){imp_historico=fdata.imp_historico;}
+  if(fdata&&fdata.concilNomesIgnorados){concilNomesIgnorados=fdata.concilNomesIgnorados;}
   atualizarConcilBadge();
   // migração: renomear Honorário → Cliente
   var honIdx=ORIGENS_ENTRADA.indexOf('Honorário');
