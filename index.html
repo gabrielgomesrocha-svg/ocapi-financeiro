@@ -2421,6 +2421,11 @@ function mergeFirebaseData(fdata){
   dados.forEach(function(r){if(!r.DataLanc&&r.Data){r.DataLanc=r.Data;migrou=true;}});
   // migração: campo NF (errado) → 'Nota Fiscal' (correto)
   dados.forEach(function(r){if(r.NF&&!r['Nota Fiscal']){r['Nota Fiscal']=r.NF;delete r.NF;migrou=true;}});
+  // migração: registros importados com DataLanc = Data (bug antigo) → corrigir para data de hoje
+  var hoje=today();
+  dados.forEach(function(r){if(r.fonte_import&&r.DataLanc&&r.DataLanc===r.Data&&r.DataLanc!==hoje){r.DataLanc=hoje;migrou=true;}});
+  // migração: registros importados com nf_emitida=true mas sem campo 'Nota Fiscal' → corrigir
+  dados.forEach(function(r){if(r.fonte_import&&r.nf_emitida&&!r['Nota Fiscal']){r['Nota Fiscal']='Sim';r.nf_emitida=false;migrou=true;}});
   if(migrou)salvarLocal();
 }
 
@@ -3088,7 +3093,8 @@ function impConfirmarImport(){
         Fornecedor: tx.rt || '',
         Despesa: tx.despesa || '',
         Observações: tx.obs || '',
-        nf_emitida: tx.nf==='Sim',
+        'Nota Fiscal': tx.nf || 'A definir',
+        nf_emitida: false,
         _ts: Date.now(),
         fonte_import: 'Extrato Banco Inter'
       };
@@ -3624,7 +3630,8 @@ function concilRejeitar(ci){
     Origem:tx.tipo==='Saída'?(tx.categoria||''):(tx.origem||'Cliente'),
     Banco:tx.banco||impBancoSelecionado||'',
     Cliente:tx.cliente||'',Fornecedor:tx.rt||'',Despesa:tx.despesa||'',
-    Observações:tx.obs||'',nf_emitida:tx.nf==='Sim',
+    Observações:tx.obs||'',
+    'Nota Fiscal':tx.nf||'A definir',nf_emitida:false,
     pago:true,
     _ts:Date.now(),fonte_import:'Extrato Banco Inter'
   });
