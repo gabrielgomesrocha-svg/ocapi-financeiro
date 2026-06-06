@@ -507,26 +507,24 @@ tr.row-pago td{opacity:.75}
 
         <div class="form-divider"></div>
 
-        <!-- BANCO -->
-        <div class="form-section-label">Banco</div>
+        <!-- BANCO + NF lado a lado -->
         <div class="form-row" style="margin-bottom:0">
           <div class="fld">
+            <label>Banco</label>
             <select id="d-banco" style="width:100%;padding:9px 12px;border:1.5px solid var(--bord);border-radius:8px;font-size:13px;background:#fff">
               <option value="">A Definir</option>
               <option value="Inter PJ">Inter PJ</option>
               <option value="Inter Dalila">Inter Dalila</option>
             </select>
           </div>
-        </div>
-
-        <div class="form-divider"></div>
-
-        <!-- NOTA FISCAL -->
-        <div class="form-section-label">Nota Fiscal</div>
-        <div class="nf-group" style="margin-bottom:0">
-          <button type="button" class="nf-btn act" id="d-nf-nao" onclick="setNF('d','N&atilde;o')">N&atilde;o</button>
-          <button type="button" class="nf-btn" id="d-nf-sim" onclick="setNF('d','Sim')">Sim</button>
-          <button type="button" class="nf-btn" id="d-nf-def" onclick="setNF('d','A definir')">A definir</button>
+          <div class="fld">
+            <label>Nota Fiscal</label>
+            <select id="d-nf-sel" onchange="setNFSel('d',this.value)" style="width:100%;padding:9px 12px;border:1.5px solid var(--bord);border-radius:8px;font-size:13px;background:#fff">
+              <option value="Não">Não</option>
+              <option value="Sim">Sim</option>
+              <option value="A definir">A definir</option>
+            </select>
+          </div>
         </div>
 
         <!-- AÇÕES -->
@@ -864,20 +862,22 @@ tr.row-pago td{opacity:.75}
       <div class="mob-fld"><label>Data de Movimentação - Parcela 1</label><input type="date" id="m-data-1"></div>
       <div class="mob-fld"><label>Valor Parcela 1 (R$)</label><input type="number" id="m-valor-1" placeholder="0,00" step="0.01" min="0" inputmode="decimal"></div>
       <div id="m-parc-extra"></div>
-      <div class="mob-fld">
-        <label>Banco</label>
-        <select id="m-banco" style="width:100%;padding:9px 12px;border:1.5px solid var(--bord);border-radius:8px;font-size:13px;background:#fff">
-          <option value="">A Definir</option>
-          <option value="Inter PJ">Inter PJ</option>
-          <option value="Inter Dalila">Inter Dalila</option>
-        </select>
-      </div>
-      <div class="mob-fld">
-        <label>Nota Fiscal</label>
-        <div class="mob-nf-group">
-          <div class="mob-nf-btn act" id="m-nf-nao" onclick="setNF('m','N&atilde;o')">N&atilde;o</div>
-          <div class="mob-nf-btn" id="m-nf-sim" onclick="setNF('m','Sim')">Sim</div>
-          <div class="mob-nf-btn" id="m-nf-def" onclick="setNF('m','A definir')">A definir</div>
+      <div style="display:flex;gap:10px">
+        <div class="mob-fld" style="flex:1">
+          <label>Banco</label>
+          <select id="m-banco" style="width:100%;padding:9px 12px;border:1.5px solid var(--bord);border-radius:8px;font-size:13px;background:#fff">
+            <option value="">A Definir</option>
+            <option value="Inter PJ">Inter PJ</option>
+            <option value="Inter Dalila">Inter Dalila</option>
+          </select>
+        </div>
+        <div class="mob-fld" style="flex:1">
+          <label>Nota Fiscal</label>
+          <select id="m-nf-sel" onchange="setNFSel('m',this.value)" style="width:100%;padding:9px 12px;border:1.5px solid var(--bord);border-radius:8px;font-size:13px;background:#fff">
+            <option value="Não">Não</option>
+            <option value="Sim">Sim</option>
+            <option value="A definir">A definir</option>
+          </select>
         </div>
       </div>
       <button class="mob-save" onclick="saveM()">Salvar Lan&ccedil;amento</button>
@@ -1027,6 +1027,11 @@ function setNF(prefix,val){
   var map={'nao':'Não','sim':'Sim','def':'A definir'};
   var cls=prefix==='m'?'mob-nf-btn':'nf-btn';
   ['nao','sim','def'].forEach(function(k){var b=R(prefix+'-nf-'+k);if(b)b.className=cls+(map[k]===val?' act':'');});
+  // sincroniza select se existir
+  var sel=R(prefix+'-nf-sel');if(sel)sel.value=val;
+}
+function setNFSel(prefix,val){
+  if(prefix==='d')dNF=val;else if(prefix==='m')mNF=val;
 }
 function setDType(t){
   dType=t;
