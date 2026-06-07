@@ -1435,36 +1435,34 @@ function rendChartBarras(divId,dd){
   var W=900,H=220,PL=70,PR=20,PT=16,PB=38,cW=W-PL-PR,cH=H-PT-PB;
   var meses=[1,2,3,4,5,6,7,8,9,10,11,12];
   var ML=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  var rec=meses.map(function(m){return (dd||[]).filter(function(r){return r['Movimentação']==='Entrada'&&getMesNum(r)===m;}).reduce(function(s,r){return s+(parseFloat(r.Valor)||0);},0);});
-  var cus=meses.map(function(m){return (dd||[]).filter(function(r){return r['Movimentação']==='Saída'&&getMesNum(r)===m;}).reduce(function(s,r){return s+(parseFloat(r.Valor)||0);},0);});
+  var rec=meses.map(function(m){return (dd||[]).filter(function(r){return r['Movimentacao']==='Entrada'&&getMesNum(r)===m;}).reduce(function(s,r){return s+(parseFloat(r.Valor)||0);},0);});
+  var cus=meses.map(function(m){return (dd||[]).filter(function(r){return r['Movimentacao']==='Saida'&&getMesNum(r)===m;}).reduce(function(s,r){return s+(parseFloat(r.Valor)||0);},0);});
+  rec=meses.map(function(m,i){return (dd||[]).filter(function(r){return r['Movimentação']==='Entrada'&&getMesNum(r)===m;}).reduce(function(s,r){return s+(parseFloat(r.Valor)||0);},0);});
+  cus=meses.map(function(m,i){return (dd||[]).filter(function(r){return r['Movimentação']==='Saída'&&getMesNum(r)===m;}).reduce(function(s,r){return s+(parseFloat(r.Valor)||0);},0);});
   var maxV=Math.max.apply(null,rec.concat(cus).concat([1]))*1.18;
   var slotW=cW/12;
   var bW=Math.min(slotW*0.36,28);
   var gap=bW*0.35;
   var yS=function(v){return PT+cH*(1-(v/maxV));};
   var h='';
-  // grid lines
   [0,.25,.5,.75,1].forEach(function(t){
     var yy=yS(maxV*t);
     h+='<line x1="'+PL+'" x2="'+(PL+cW)+'" y1="'+yy.toFixed(1)+'" y2="'+yy.toFixed(1)+'" stroke="#f0f0f0" stroke-width="1"/>';
     h+='<text x="'+(PL-6)+'" y="'+(yy+4).toFixed(1)+'" text-anchor="end" font-size="10" fill="#bbb">'+fmtK(maxV*t)+'</text>';
   });
-  // axis
   h+='<line x1="'+PL+'" x2="'+PL+'" y1="'+PT+'" y2="'+(PT+cH)+'" stroke="#e8e8e8" stroke-width="1"/>';
   meses.forEach(function(m,i){
     var cx=PL+i*slotW+slotW/2;
-    // Receita bar
-    var rv=rec[i];var rH=rv>0?Math.max(cH*(rv/maxV),2):0;
-    var rX=cx-gap/2-bW;var rY=PT+cH-rH;
-    if(rv>0)h+='<rect x="'+rX.toFixed(1)+'" y="'+rY.toFixed(1)+'" width="'+bW.toFixed(1)+'" height="'+rH.toFixed(1)+'" rx="3" fill="#27ae60" opacity="0.85" style="cursor:pointer" onmouseover="showChartTip(event,'Receita '+ML[i]+': '+fmtK(rv)+'')" onmouseout="hideChartTip()"/>';
-    // Custo bar
-    var cv=cus[i];var cH2=cv>0?Math.max(cH*(cv/maxV),2):0;
-    var cX=cx+gap/2;var cY=PT+cH-cH2;
-    if(cv>0)h+='<rect x="'+cX.toFixed(1)+'" y="'+cY.toFixed(1)+'" width="'+bW.toFixed(1)+'" height="'+cH2.toFixed(1)+'" rx="3" fill="#e74c3c" opacity="0.8" style="cursor:pointer" onmouseover="showChartTip(event,'Custo '+ML[i]+': '+fmtK(cv)+'')" onmouseout="hideChartTip()"/>';
-    // label
+    var rv=rec[i]; var rH=rv>0?Math.max(cH*(rv/maxV),2):0;
+    var rX=cx-gap/2-bW; var rY=PT+cH-rH;
+    var tipR=ML[i]+' Receita: '+fmtK(rv);
+    if(rv>0)h+='<rect x="'+rX.toFixed(1)+'" y="'+rY.toFixed(1)+'" width="'+bW.toFixed(1)+'" height="'+rH.toFixed(1)+'" rx="3" fill="#27ae60" opacity="0.85" style="cursor:pointer" onmouseover="showChartTip(event,\''+tipR+'\')" onmouseout="hideChartTip()"/>';
+    var cv=cus[i]; var cH2=cv>0?Math.max(cH*(cv/maxV),2):0;
+    var cX=cx+gap/2; var cY=PT+cH-cH2;
+    var tipC=ML[i]+' Custo: '+fmtK(cv);
+    if(cv>0)h+='<rect x="'+cX.toFixed(1)+'" y="'+cY.toFixed(1)+'" width="'+bW.toFixed(1)+'" height="'+cH2.toFixed(1)+'" rx="3" fill="#e74c3c" opacity="0.8" style="cursor:pointer" onmouseover="showChartTip(event,\''+tipC+'\')" onmouseout="hideChartTip()"/>';
     h+='<text x="'+cx.toFixed(1)+'" y="'+(PT+cH+16)+'" text-anchor="middle" font-size="10" fill="#aaa">'+ML[i]+'</text>';
   });
-  // legend
   h+='<rect x="'+(PL+cW-130)+'" y="'+PT+'" width="10" height="10" rx="2" fill="#27ae60" opacity="0.85"/>';
   h+='<text x="'+(PL+cW-116)+'" y="'+(PT+9)+'" font-size="10" fill="#666">Receita</text>';
   h+='<rect x="'+(PL+cW-70)+'" y="'+PT+'" width="10" height="10" rx="2" fill="#e74c3c" opacity="0.8"/>';
