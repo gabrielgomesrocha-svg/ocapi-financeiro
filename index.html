@@ -1442,8 +1442,8 @@ function rendChartBarras(divId,dd){
   cus=meses.map(function(m,i){return (dd||[]).filter(function(r){return r['Movimentação']==='Saída'&&getMesNum(r)===m;}).reduce(function(s,r){return s+(parseFloat(r.Valor)||0);},0);});
   var maxV=Math.max.apply(null,rec.concat(cus).concat([1]))*1.18;
   var slotW=cW/12;
-  var bW=Math.min(slotW*0.38,36);
-  var gap=bW*0.28;
+  var bW=Math.min(slotW*0.26,26);
+  var gap=bW*0.22;
   var yS=function(v){return PT+cH*(1-(v/maxV));};
   var h='';
   [0,.25,.5,.75,1].forEach(function(t){
