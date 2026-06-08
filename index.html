@@ -69,7 +69,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .dash-ult-date{font-size:11px;color:#bbb;white-space:nowrap;margin-left:8px}
 .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
 .chart-card{background:var(--card);border-radius:14px;border:1px solid var(--bord);padding:20px}
-.chart-title{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--sub);margin-bottom:10px}
+.chart-title{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--sub);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.chart-expand-btn{background:none;border:1px solid var(--bord);border-radius:6px;cursor:pointer;padding:2px 6px;font-size:11px;color:#bbb;line-height:1.4;transition:all .15s;flex-shrink:0;margin-left:8px}
+.chart-expand-btn:hover{background:#f5f5f5;color:#555;border-color:#ccc}
+/* Chart detail drawer */
+.cdr-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:900;opacity:0;pointer-events:none;transition:opacity .22s}
+.cdr-overlay.open{opacity:1;pointer-events:all}
+.cdr-panel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:95vw;background:#fff;box-shadow:-6px 0 40px rgba(0,0,0,.14);z-index:901;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+.cdr-overlay.open .cdr-panel{transform:translateX(0)}
+.cdr-head{display:flex;align-items:center;justify-content:space-between;padding:20px 22px;border-bottom:1px solid var(--bord);flex-shrink:0}
+.cdr-head h3{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#1a1a1a}
+.cdr-close{background:none;border:none;cursor:pointer;font-size:18px;color:#aaa;padding:4px 8px;border-radius:6px;line-height:1}
+.cdr-close:hover{background:#f0f0f0;color:#333}
+.cdr-body{overflow-y:auto;flex:1;padding:20px 22px}
+.cdr-table{width:100%;border-collapse:collapse;font-size:12px}
+.cdr-table th{text-align:left;padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#aaa;border-bottom:2px solid var(--bord)}
+.cdr-table td{padding:9px 10px;border-bottom:1px solid #f5f5f5;color:#333}
+.cdr-table tr:last-child td{border-bottom:none}
+.cdr-table tr:hover td{background:#fafafa}
+.cdr-table .num{text-align:right;font-variant-numeric:tabular-nums}
+.cdr-table .pos{color:#27ae60;font-weight:600}
+.cdr-table .neg{color:#c0392b;font-weight:600}
+.cdr-table .total-row td{font-weight:700;border-top:2px solid var(--bord);background:#fafafa}
 .chart-leg{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px}
 .chart-leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#666}
 .chart-leg-dot{width:10px;height:10px;border-radius:50%}
@@ -366,29 +387,29 @@ tr.row-pago td{opacity:.75}
     
   </div>
     <div class="chart-card" style="margin-bottom:20px">
-      <div class="chart-title">Receita × Custo por Mês</div>
+      <div class="chart-title">Receita × Custo por Mês<button class="chart-expand-btn" onclick="openChartDetail('barras')">Ver detalhes ↗</button></div>
       <div id="ch-barras-div"></div>
     </div>
     <div class="chart-row">
       <div class="chart-card">
-        <div class="chart-title">Margem de Contribuição por Mês</div>
+        <div class="chart-title">Margem de Contribuição por Mês<button class="chart-expand-btn" onclick="openChartDetail('margem')">Ver detalhes ↗</button></div>
         <div id="ch-res-div"></div>
         <div class="chart-leg" id="leg-res"></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Fluxo de Caixa Acumulado</div>
+        <div class="chart-title">Fluxo de Caixa Acumulado<button class="chart-expand-btn" onclick="openChartDetail('fluxo')">Ver detalhes ↗</button></div>
         <div id="ch-fluxo-div"></div>
         <div class="chart-leg" id="leg-fluxo"></div>
       </div>
     </div>
     <div class="chart-row">
       <div class="chart-card" style="display:flex;flex-direction:column">
-        <div class="chart-title">Ticket Médio por Origem de Receita</div>
+        <div class="chart-title">Ticket Médio por Origem de Receita<button class="chart-expand-btn" onclick="openChartDetail('ticket')">Ver detalhes ↗</button></div>
         <div id="ch-pizza-div" style="flex:1;display:flex;align-items:center;justify-content:center"></div>
         <div class="chart-leg" id="leg-pizza"></div>
       </div>
       <div class="chart-card" style="display:flex;flex-direction:column">
-        <div class="chart-title">Custo Fixo vs Variável por Mês</div>
+        <div class="chart-title">Custo Fixo vs Variável por Mês<button class="chart-expand-btn" onclick="openChartDetail('fixovar')">Ver detalhes ↗</button></div>
         <div id="ch-desp-cat-div" style="flex:1;display:flex;align-items:center;justify-content:center"></div>
         <div class="chart-leg" id="leg-desp-cat"></div>
       </div>
@@ -1141,6 +1162,133 @@ function saveM(){
 function calcMov(mov,src){return(src||dados).filter(function(r){return r['Movimentação']===mov;}).reduce(function(a,r){return a+(parseFloat(r.Valor)||0);},0);}
 function calcFuturo(mov,src){var t=today();return(src||dados).filter(function(r){return r['Movimentação']===mov&&r.Data&&r.Data>t&&!r.pago;}).reduce(function(a,r){return a+(parseFloat(r.Valor)||0);},0);}
 function kpi(l,v,cls,sub,delta){return '<div class="kpi '+cls+'"><div class="kpi-lbl">'+l+'</div><div class="kpi-val">'+v+'</div>'+(delta?'<div class="kpi-sub">'+delta+'</div>':'')+(sub&&!delta?'<div class="kpi-sub">'+sub+'</div>':'')+'</div>';}
+/* ── CHART DETAIL DRAWER ── */
+function closeCdr(){R('cdr-overlay').classList.remove('open');}
+function closeCdrOut(e){if(e.target===R('cdr-overlay'))closeCdr();}
+function openChartDetail(type){
+  var dd=getDashData();
+  var meses=[1,2,3,4,5,6,7,8,9,10,11,12];
+  var labels=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var title='',html='';
+  if(type==='barras'){
+    title='Receita × Custo por Mês';
+    var rows=meses.map(function(m,i){
+      var rec=dd.filter(function(r){return r['Movimentação']==='Entrada'&&getMesNum(r)===m;}).reduce(function(a,r){return a+(parseFloat(r.Valor)||0);},0);
+      var cus=dd.filter(function(r){return r['Movimentação']==='Saída'&&getMesNum(r)===m;}).reduce(function(a,r){return a+(parseFloat(r.Valor)||0);},0);
+      var res=rec-cus,mg=rec>0?Math.round(res/rec*100):0;
+      return{l:labels[i],rec:rec,cus:cus,res:res,mg:mg};
+    });
+    var totRec=rows.reduce(function(a,r){return a+r.rec;},0);
+    var totCus=rows.reduce(function(a,r){return a+r.cus;},0);
+    var totRes=totRec-totCus,totMg=totRec>0?Math.round(totRes/totRec*100):0;
+    html='<table class="cdr-table"><thead><tr><th>Mês</th><th class="num">Receita</th><th class="num">Custo</th><th class="num">Resultado</th><th class="num">Margem</th></tr></thead><tbody>';
+    rows.forEach(function(r){
+      if(r.rec===0&&r.cus===0)return;
+      var cls=r.res>=0?'pos':'neg';
+      html+='<tr><td>'+r.l+'</td><td class="num">'+fmt(r.rec)+'</td><td class="num">'+fmt(r.cus)+'</td><td class="num '+cls+'">'+fmt(r.res)+'</td><td class="num '+cls+'">'+r.mg+'%</td></tr>';
+    });
+    html+='<tr class="total-row"><td>Total</td><td class="num">'+fmt(totRec)+'</td><td class="num">'+fmt(totCus)+'</td><td class="num '+(totRes>=0?'pos':'neg')+'">'+fmt(totRes)+'</td><td class="num '+(totRes>=0?'pos':'neg')+'">'+totMg+'%</td></tr>';
+    html+='</tbody></table>';
+  } else if(type==='margem'){
+    title='Margem de Contribuição por Mês';
+    var rows2=meses.map(function(m,i){
+      var rec=0,cusVar=0,cusFix=0;
+      dd.forEach(function(r){
+        var mn=getMesNum(r);if(mn!==m)return;
+        var v=parseFloat(r.Valor)||0;
+        if(r['Movimentação']==='Entrada') rec+=v;
+        else{if(ORIGENS_SAIDA_TIPO[r.Origem]==='fixo')cusFix+=v;else cusVar+=v;}
+      });
+      var mc=rec-cusVar,mcPct=rec>0?Math.round(mc/rec*100):0;
+      return{l:labels[i],rec:rec,cusVar:cusVar,cusFix:cusFix,mc:mc,mcPct:mcPct};
+    });
+    var tRec2=rows2.reduce(function(a,r){return a+r.rec;},0);
+    var tVar2=rows2.reduce(function(a,r){return a+r.cusVar;},0);
+    var tFix2=rows2.reduce(function(a,r){return a+r.cusFix;},0);
+    var tMc2=tRec2-tVar2,tMcPct2=tRec2>0?Math.round(tMc2/tRec2*100):0;
+    html='<table class="cdr-table"><thead><tr><th>Mês</th><th class="num">Receita</th><th class="num">Custo Var.</th><th class="num">Margem</th><th class="num">Mg %</th><th class="num">Custo Fixo</th></tr></thead><tbody>';
+    rows2.forEach(function(r){
+      if(r.rec===0&&r.cusVar===0&&r.cusFix===0)return;
+      var cls=r.mc>=0?'pos':'neg';
+      html+='<tr><td>'+r.l+'</td><td class="num">'+fmt(r.rec)+'</td><td class="num">'+fmt(r.cusVar)+'</td><td class="num '+cls+'">'+fmt(r.mc)+'</td><td class="num '+cls+'">'+r.mcPct+'%</td><td class="num">'+fmt(r.cusFix)+'</td></tr>';
+    });
+    html+='<tr class="total-row"><td>Total</td><td class="num">'+fmt(tRec2)+'</td><td class="num">'+fmt(tVar2)+'</td><td class="num '+(tMc2>=0?'pos':'neg')+'">'+fmt(tMc2)+'</td><td class="num '+(tMc2>=0?'pos':'neg')+'">'+tMcPct2+'%</td><td class="num">'+fmt(tFix2)+'</td></tr>';
+    html+='</tbody></table>';
+  } else if(type==='fluxo'){
+    title='Fluxo de Caixa Acumulado';
+    var acum2=0,prev2=0;
+    var rows3=meses.map(function(m,i){
+      var e=0,s=0;
+      dd.forEach(function(r){
+        var mn=getMesNum(r);if(mn!==m)return;
+        var v=parseFloat(r.Valor)||0;
+        if(r['Movimentação']==='Entrada')e+=v;else s+=v;
+      });
+      var res2=e-s;prev2=acum2;acum2+=res2;
+      var var2=prev2!==0?Math.round((acum2-prev2)/Math.abs(prev2)*100):null;
+      return{l:labels[i],ent:e,sai:s,res:res2,acum:acum2,var:var2};
+    });
+    var hasAny=rows3.some(function(r){return r.ent>0||r.sai>0;});
+    if(!hasAny){html='<p style="color:#aaa;font-size:13px;text-align:center;padding:40px 0">Sem dados para o período</p>';}
+    else{
+      html='<table class="cdr-table"><thead><tr><th>Mês</th><th class="num">Entrada</th><th class="num">Saída</th><th class="num">Resultado</th><th class="num">Acumulado</th><th class="num">Var. %</th></tr></thead><tbody>';
+      rows3.forEach(function(r){
+        if(r.ent===0&&r.sai===0)return;
+        var cls=r.res>=0?'pos':'neg';
+        var varStr=r.var===null?'—':(r.var>=0?'+'+r.var+'%':r.var+'%');
+        var varCls=r.var===null?'':(r.var>=0?'pos':'neg');
+        html+='<tr><td>'+r.l+'</td><td class="num">'+fmt(r.ent)+'</td><td class="num">'+fmt(r.sai)+'</td><td class="num '+cls+'">'+fmt(r.res)+'</td><td class="num '+(r.acum>=0?'pos':'neg')+'">'+fmt(r.acum)+'</td><td class="num '+varCls+'">'+varStr+'</td></tr>';
+      });
+      html+='</tbody></table>';
+    }
+  } else if(type==='ticket'){
+    title='Ticket Médio por Origem de Receita';
+    var origens={};
+    dd.filter(function(r){return r['Movimentação']==='Entrada';}).forEach(function(r){
+      var o=r.Origem||'Outros';
+      if(!origens[o])origens[o]={total:0,count:0};
+      origens[o].total+=(parseFloat(r.Valor)||0);
+      origens[o].count++;
+    });
+    var ents2=Object.keys(origens).map(function(k){
+      return{l:k,total:origens[k].total,count:origens[k].count,avg:origens[k].count>0?origens[k].total/origens[k].count:0};
+    }).sort(function(a,b){return b.avg-a.avg;});
+    var totTotal=ents2.reduce(function(a,e){return a+e.total;},0)||1;
+    html='<table class="cdr-table"><thead><tr><th>Origem</th><th class="num">Lançamentos</th><th class="num">Total</th><th class="num">% do Total</th><th class="num">Ticket Médio</th></tr></thead><tbody>';
+    ents2.forEach(function(e){
+      var pct=Math.round(e.total/totTotal*100);
+      html+='<tr><td>'+e.l+'</td><td class="num">'+e.count+'</td><td class="num">'+fmt(e.total)+'</td><td class="num">'+pct+'%</td><td class="num pos">'+fmt(e.avg)+'</td></tr>';
+    });
+    html+='<tr class="total-row"><td>Total</td><td class="num">'+ents2.reduce(function(a,e){return a+e.count;},0)+'</td><td class="num">'+fmt(totTotal)+'</td><td class="num">100%</td><td class="num">'+fmt(totTotal/Math.max(ents2.reduce(function(a,e){return a+e.count;},0),1))+'</td></tr>';
+    html+='</tbody></table>';
+  } else if(type==='fixovar'){
+    title='Custo Fixo vs Variável por Mês';
+    var rows4=meses.map(function(m,i){
+      var fix=0,vari=0;
+      dd.filter(function(r){return r['Movimentação']==='Saída'&&getMesNum(r)===m;}).forEach(function(r){
+        var v=parseFloat(r.Valor)||0;
+        if(ORIGENS_SAIDA_TIPO[r.Origem]==='fixo')fix+=v;else vari+=v;
+      });
+      return{l:labels[i],fix:fix,vari:vari,total:fix+vari};
+    });
+    var tFix4=rows4.reduce(function(a,r){return a+r.fix;},0);
+    var tVar4=rows4.reduce(function(a,r){return a+r.vari;},0);
+    var tTot4=tFix4+tVar4||1;
+    html='<table class="cdr-table"><thead><tr><th>Mês</th><th class="num">Custo Fixo</th><th class="num">% Fix.</th><th class="num">Custo Variável</th><th class="num">% Var.</th><th class="num">Total</th></tr></thead><tbody>';
+    rows4.forEach(function(r){
+      if(r.total===0)return;
+      var pFix=r.total>0?Math.round(r.fix/r.total*100):0;
+      var pVar=100-pFix;
+      html+='<tr><td>'+r.l+'</td><td class="num">'+fmt(r.fix)+'</td><td class="num">'+pFix+'%</td><td class="num">'+fmt(r.vari)+'</td><td class="num">'+pVar+'%</td><td class="num" style="font-weight:600">'+fmt(r.total)+'</td></tr>';
+    });
+    var tPFix=Math.round(tFix4/tTot4*100);
+    html+='<tr class="total-row"><td>Total</td><td class="num">'+fmt(tFix4)+'</td><td class="num">'+tPFix+'%</td><td class="num">'+fmt(tVar4)+'</td><td class="num">'+(100-tPFix)+'%</td><td class="num">'+fmt(tTot4)+'</td></tr>';
+    html+='</tbody></table>';
+  }
+  R('cdr-title').textContent=title;
+  R('cdr-body').innerHTML=html;
+  R('cdr-overlay').classList.add('open');
+}
 function rendDash(){
   var dd=getDashData(),prev=getPrevData();
   var ent=calcMov('Entrada',dd),sai=calcMov('Saída',dd),sal=ent-sai;
@@ -4353,5 +4501,16 @@ function impVoltarStep1(){
 })();
 </script>
 <button id="desk-fab" onclick="openSheet()" title="Novo lançamento">+</button>
+
+<!-- CHART DETAIL DRAWER -->
+<div class="cdr-overlay" id="cdr-overlay" onclick="closeCdrOut(event)">
+  <div class="cdr-panel">
+    <div class="cdr-head">
+      <h3 id="cdr-title"></h3>
+      <button class="cdr-close" onclick="closeCdr()">&#10005;</button>
+    </div>
+    <div class="cdr-body" id="cdr-body"></div>
+  </div>
+</div>
 </body>
 </html>
