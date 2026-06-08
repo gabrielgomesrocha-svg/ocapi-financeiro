@@ -592,7 +592,9 @@ tr.row-pago td{opacity:.75}
         <th id="h-th-Nome" onclick="setHSort('Nome')">Nome <span class="sort-arrow">↕</span></th>
         <th id="h-th-Parcela" onclick="setHSort('Parcela')">Parcela <span class="sort-arrow">↕</span></th>
         <th id="h-th-Valor" onclick="setHSort('Valor')">Valor <span class="sort-arrow">↕</span></th>
-        <th id="h-th-Status" onclick="setHSort('Status')" title="Pago · NF · NF Emitida">Status <span class="sort-arrow">↕</span></th>
+        <th id="h-th-Status" onclick="setHSort('Status')" title="Pago" style="text-align:center;width:44px">Pago <span class="sort-arrow">↕</span></th>
+        <th style="text-align:center;width:60px">NF</th>
+        <th style="text-align:center;width:62px">NF Emit.</th>
         <th></th>
       </tr></thead>
       <tbody id="h-body"></tbody></table>
@@ -1784,22 +1786,18 @@ function rendHist(){
       '<td style="max-width:160px"><div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.Cliente||r.Despesa||'—')+'</div>'+(r.Fornecedor&&r.Fornecedor!==(r.Cliente||'')?'<div style="font-size:10px;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.Fornecedor+'</div>':r.RT?'<div style="font-size:10px;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.RT+'</div>':'')+'</td>'+
       '<td style="white-space:nowrap">'+(r.Parcela||'—')+'</td>'+
       '<td style="font-weight:700;color:'+(isE?'#27ae60':'#c0392b')+'">'+fmt(r.Valor)+'</td>'+
-      '<td style="min-width:108px">'+
-        '<div style="display:flex;flex-direction:column;gap:3px">'+
-          '<div style="display:flex;gap:3px;align-items:center">'+
-            '<button class="chk-btn pago-btn'+(isPago?' on':'')+'" data-ri="'+ri+'" title="'+(isPago?'Pago — clique para desfazer':'A pagar — clique para confirmar')+'" style="font-size:10px;padding:2px 7px;border-radius:5px;flex:1;white-space:nowrap">'+(isPago?'✓ Pago':'○ Pagar')+'</button>'+
-          '</div>'+
-          '<div style="display:flex;gap:3px;align-items:center">'+
-            '<select class="nf-sel" data-ri="'+ri+'" style="border:1px solid #e0e0e0;border-radius:5px;padding:2px 4px;font-size:10px;background:#fafafa;color:#555;flex:1">'+
-              '<option value="Não"'+(r['Nota Fiscal']==='Não'||!r['Nota Fiscal']?'selected':'')+'>NF: Não</option>'+
-              '<option value="Sim"'+(r['Nota Fiscal']==='Sim'?'selected':'')+'>NF: Sim</option>'+
-              '<option value="A Definir"'+(r['Nota Fiscal']==='A Definir'?'selected':'')+'>NF: A def.</option>'+
-            '</select>'+
-          '</div>'+
-          '<div style="display:flex;gap:3px;align-items:center">'+
-            '<button class="chk-btn nf-btn'+(isNFem?' nf-on':'')+'" data-ri="'+ri+'" title="'+(isNFem?'NF emitida':'NF não emitida')+'" style="font-size:10px;padding:2px 7px;border-radius:5px;flex:1;white-space:nowrap">'+(isNFem?'🧾 NF emitida':'○ NF emitida')+'</button>'+
-          '</div>'+
-        '</div>'+
+      '<td style="text-align:center;width:44px">'+
+        '<button class="chk-btn pago-btn'+(isPago?' on':'')+'" data-ri="'+ri+'" title="'+(isPago?'Pago — clique para desfazer':'A pagar — clique para confirmar')+'">'+(isPago?'✓':'○')+'</button>'+
+      '</td>'+
+      '<td style="text-align:center;width:60px">'+
+        '<select class="nf-sel" data-ri="'+ri+'" title="Nota Fiscal" style="border:1px solid #e0e0e0;border-radius:5px;padding:2px 3px;font-size:11px;font-weight:600;background:#fafafa;color:#555;width:52px;text-align:center">'+
+          '<option value="Não"'+(r['Nota Fiscal']==='Não'||!r['Nota Fiscal']?'selected':'')+'>Não</option>'+
+          '<option value="Sim"'+(r['Nota Fiscal']==='Sim'?'selected':'')+'>Sim</option>'+
+          '<option value="A Definir"'+(r['Nota Fiscal']==='A Definir'?'selected':'')+'>A def.</option>'+
+        '</select>'+
+      '</td>'+
+      '<td style="text-align:center;width:62px">'+
+        '<button class="chk-btn nf-btn'+(isNFem?' nf-on':'')+'" data-ri="'+ri+'" title="'+(isNFem?'NF emitida — clique para desfazer':'NF não emitida')+'">'+(isNFem?'✓':'○')+'</button>'+
       '</td>'+
       '<td style="white-space:nowrap"><button class="ic-btn edit-btn" data-ri="'+ri+'" title="Editar">&#9998;</button><button class="ic-btn del-btn" data-ri="'+ri+'" title="Excluir" style="color:#c0392b">&#128465;</button></td>';
     tr.querySelector('.banco-sel').addEventListener('change',function(){var ri=parseInt(this.dataset.ri);if(dados[ri]){dados[ri].Banco=this.value;salvarLocal();}});
