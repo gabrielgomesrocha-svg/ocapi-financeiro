@@ -4236,6 +4236,16 @@ function aliasDropSelect(inpId, valor){
 // ── Badge de conciliação ──
 function atualizarConcilBadge(){
   var pendentes = conciliacoes.filter(function(c){return c.status==='pendente';}).length;
+  // Contar grupos pendentes em Conciliação de Nomes
+  var threshold=0.72;
+  [CLI_HON,RT_EMPRESAS,DESPESAS].forEach(function(lista){
+    var grupos=agruparSimilares(lista,threshold).filter(function(grupo){
+      return !concilNomesIgnorados.some(function(ig){
+        return grupo.every(function(n){return ig.indexOf(n)>=0;})&&ig.every(function(n){return grupo.indexOf(n)>=0;});
+      });
+    });
+    pendentes+=grupos.length;
+  });
   var badge = R('sb-concil-badge');
   if(badge){
     if(pendentes>0){badge.style.display='block';badge.textContent=pendentes;}
