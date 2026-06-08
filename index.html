@@ -2086,7 +2086,7 @@ function renderAdmConciliar(cont){
           '<label style="font-size:12px;color:#666;font-weight:600;white-space:nowrap">Nome canônico:</label>'+
           '<select id="concil-sel-'+cat.listaNome+'-'+gi+'" style="flex:1;min-width:180px;padding:6px 10px;border:1.5px solid #ddd;border-radius:7px;font-size:13px">'+optsHtml+'</select>'+
           '<button onclick="admUnificar(\''+cat.campo+'\',\''+cat.listaNome+'\',\'concil-sel-'+cat.listaNome+'-'+gi+'\')" style="padding:7px 16px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Unificar</button>'+
-          '<button onclick="admIgnorarGrupo('+JSON.stringify(grupo)+')" style="padding:7px 12px;background:transparent;color:#aaa;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap" title="Ignorar — não são nomes duplicados">✕ Ignorar</button>'+
+          '<button onclick="admIgnorarGrupo('+JSON.stringify(grupo).replace(/"/g,'&quot;')+')" style="padding:7px 12px;background:transparent;color:#aaa;border:1.5px solid #ddd;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap" title="Ignorar — não são nomes duplicados">✕ Ignorar</button>'+
         '</div>';
       sec.appendChild(card);
     });
