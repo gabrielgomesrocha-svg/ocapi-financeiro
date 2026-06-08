@@ -950,7 +950,7 @@ var mobDashMode='mes_atual',mobDashFrom='',mobDashTo='';
 var dType='entrada',mType='entrada';
 var dOrigE='',dOrigS='',mOrigE='',mOrigS='';
 var dNF='A definir',mNF='A definir';
-var mobP='dash',aTab='conciliar',hPage=1,hPer=50,admSearch='';
+var mobP='dash',aTab='cli_hon',hPage=1,hPer=50,admSearch='',concilTab='bancaria';
 var R=function(id){return document.getElementById(id);};
 var fmt=function(v){return 'R$ '+(parseFloat(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});};
 var fmtK=function(v){if(v>=1000000)return 'R$'+(v/1000000).toFixed(1)+'M';if(v>=1000)return 'R$'+Math.round(v/1000)+'k';return 'R$'+Math.round(v);};
@@ -2119,7 +2119,7 @@ function admIgnorarGrupo(grupo){
   salvarLocal();rendAdmin();
   showToast('Grupo ignorado — não aparecerá mais','#888',2500);
 }
-var aLabels={conciliar:'🔗 Conciliar Nomes',cli_hon:'Clientes',rt_emp:'RT',origens_e:'Origens de Entrada',origens_s:'Origens de Saída',aliases:'Aliases de Conciliação'};
+var aLabels={cli_hon:'Clientes',rt_emp:'RT',origens_e:'Origens de Entrada',origens_s:'Origens de Saída',aliases:'Aliases de Conciliação'};
 function rendAdmin(){
   var tabs=R('adm-tabs');if(!tabs)return;tabs.innerHTML='';
   Object.keys(aLabels).forEach(function(k){
@@ -4246,13 +4246,26 @@ function atualizarConcilBadge(){
 function rendConcil(){
   atualizarConcilBadge();
   var cont = R('concil-content'); if(!cont) return;
+  cont.innerHTML='';
+  // Tab switcher
+  var tabBar=document.createElement('div');
+  tabBar.style.cssText='display:flex;gap:8px;margin-bottom:24px';
+  [{k:'bancaria',l:'Conciliação Bancária'},{k:'nomes',l:'🔗 Conciliação de Nomes'}].forEach(function(t){
+    var btn=document.createElement('div');btn.className='admin-tab'+(concilTab===t.k?' act':'');
+    btn.textContent=t.l;btn.style.cursor='pointer';
+    btn.addEventListener('click',function(){concilTab=t.k;rendConcil();});
+    tabBar.appendChild(btn);
+  });
+  cont.appendChild(tabBar);
+  if(concilTab==='nomes'){renderAdmConciliar(cont);return;}
+  var wrap=document.createElement('div');cont.appendChild(wrap);
   var pendentes = conciliacoes.filter(function(c){return c.status==='pendente';}).sort(function(a,b){
     var da=Math.abs(new Date(a.tx.data)-new Date(a.matchData&&a.matchData.Data?a.matchData.Data:'1970-01-01'));
     var db=Math.abs(new Date(b.tx.data)-new Date(b.matchData&&b.matchData.Data?b.matchData.Data:'1970-01-01'));
     return da-db;
   });
   if(!pendentes.length){
-    cont.innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:48px;margin-bottom:16px">✅</div><h2 style="font-size:18px;font-weight:700;margin-bottom:8px">Nenhuma conciliação pendente</h2><p style="color:#aaa;font-size:13px">Quando o sistema detectar possíveis vínculos na importação, eles aparecerão aqui.</p></div>';
+    wrap.innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:48px;margin-bottom:16px">✅</div><h2 style="font-size:18px;font-weight:700;margin-bottom:8px">Nenhuma conciliação pendente</h2><p style="color:#aaa;font-size:13px">Quando o sistema detectar possíveis vínculos na importação, eles aparecerão aqui.</p></div>';
     return;
   }
   var h = '<div style="margin-bottom:24px"><h2 style="font-size:20px;font-weight:800;margin-bottom:4px">Conciliação Bancária</h2>'
@@ -4327,7 +4340,7 @@ function rendConcil(){
       +'</div>';
   });
   h += '</div>';
-  cont.innerHTML=h;
+  wrap.innerHTML=h;
   // Ativa autocomplete nos campos de edição
   conciliacoes.forEach(function(c,ci){
     if(c.status!=='pendente') return;
