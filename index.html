@@ -589,14 +589,10 @@ tr.row-pago td{opacity:.75}
         <th id="h-th-Tipo" onclick="setHSort('Tipo')">Tipo <span class="sort-arrow">↕</span></th>
         <th id="h-th-Banco" onclick="setHSort('Banco')">Banco <span class="sort-arrow">↕</span></th>
         <th id="h-th-Origem" onclick="setHSort('Origem')">Categoria <span class="sort-arrow">↕</span></th>
-        <th id="h-th-Cliente" onclick="setHSort('Cliente')">Despesa <span class="sort-arrow">↕</span></th>
-        <th id="h-th-RT" onclick="setHSort('RT')">Empresa RT <span class="sort-arrow">↕</span></th>
+        <th id="h-th-Nome" onclick="setHSort('Nome')">Nome <span class="sort-arrow">↕</span></th>
         <th id="h-th-Parcela" onclick="setHSort('Parcela')">Parcela <span class="sort-arrow">↕</span></th>
         <th id="h-th-Valor" onclick="setHSort('Valor')">Valor <span class="sort-arrow">↕</span></th>
-        <th id="h-th-Pago" onclick="setHSort('Pago')" title="Pagamento confirmado">Pago <span class="sort-arrow">↕</span></th>
-        <th id="h-th-NF" onclick="setHSort('NF')">NF <span class="sort-arrow">↕</span></th>
-        <th id="h-th-NFem" onclick="setHSort('NFem')" title="NF emitida">NF &#10003; <span class="sort-arrow">↕</span></th>
-        <th id="h-th-Obs" onclick="setHSort('Obs')">Obs <span class="sort-arrow">↕</span></th>
+        <th id="h-th-Status" onclick="setHSort('Status')" title="Pago · NF · NF Emitida">Status <span class="sort-arrow">↕</span></th>
         <th></th>
       </tr></thead>
       <tbody id="h-body"></tbody></table>
@@ -1759,15 +1755,10 @@ function getHFilt(){
   if(hSortCol==='Tipo'){return d*(a['Movimentação']||'').localeCompare(b['Movimentação']||'');}
   if(hSortCol==='Banco'){return d*(a.Banco||'').localeCompare(b.Banco||'');}
   if(hSortCol==='Origem'){return d*(a.Origem||'').localeCompare(b.Origem||'');}
-  if(hSortCol==='Cliente'){return d*(a.Cliente||'').localeCompare(b.Cliente||'');}
-  if(hSortCol==='RT'){return d*(a.Fornecedor||'').localeCompare(b.Fornecedor||'');}
-  if(hSortCol==='Despesa'){return d*(a.Despesa||'').localeCompare(b.Despesa||'');}
+  if(hSortCol==='Nome'){return d*((a.Cliente||a.Despesa||'').localeCompare(b.Cliente||b.Despesa||''));}
   if(hSortCol==='Parcela'){return d*(a.Parcela||'').localeCompare(b.Parcela||'');}
-  if(hSortCol==='Valor'){return d*((a.Valor||0)-(b.Valor||0));}
-  if(hSortCol==='Pago'){return d*((a.pago?1:0)-(b.pago?1:0));}
-  if(hSortCol==='NF'){return d*(a['Nota Fiscal']||'').localeCompare(b['Nota Fiscal']||'');}
-  if(hSortCol==='NFem'){return d*((a.nf_emitida?1:0)-(b.nf_emitida?1:0));}
-  if(hSortCol==='Obs'){return d*(a.obs||'').localeCompare(b.obs||'');}
+  if(hSortCol==='Valor'){return d*((parseFloat(String(a.Valor||0).replace(',','.'))||0)-(parseFloat(String(b.Valor||0).replace(',','.'))||0));}
+  if(hSortCol==='Status'){return d*((a.pago?2:0)+(a.nf_emitida?1:0)-(b.pago?2:0)-(b.nf_emitida?1:0));}
   return 0;
 });
 }
@@ -1790,16 +1781,27 @@ function rendHist(){
       '<td><select class="tipo-sel" data-ri="'+ri+'" style="border:1px solid #e0e0e0;border-radius:6px;padding:3px 6px;font-size:11px;background:'+(isE?'#eafaf1':'#fdecea')+';color:'+(isE?'#27ae60':'#c0392b')+';width:100%;font-weight:700"><option value="Entrada"'+(isE?'selected':'')+'>Entrada</option><option value="Saída"'+(!isE?'selected':'')+'>Saída</option></select></td>'+
       '<td><select class="banco-sel" data-ri="'+ri+'" style="border:1px solid #e0e0e0;border-radius:6px;padding:3px 6px;font-size:11px;background:#fafafa;color:#555;width:100%"><option value=""'+((!r.Banco||r.Banco==="")?'selected':'')+'>A Definir</option><option value="Inter PJ"'+(r.Banco==='Inter PJ'?'selected':'')+'>Inter PJ</option><option value="Inter Dalila"'+(r.Banco==='Inter Dalila'?'selected':'')+'>Inter Dalila</option></select></td>'+
       '<td><select class="orig-sel" data-ri="'+ri+'" style="border:1px solid #e0e0e0;border-radius:6px;padding:3px 6px;font-size:11px;background:#fafafa;color:#555;width:100%">'+(isE?ORIGENS_ENTRADA:ORIGENS_SAIDA).map(function(o){return '<option value="'+o+'"'+(r.Origem===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select></td>'+
-      '<td>'+(r.Cliente||r.Despesa||'—')+'</td>'+
-      (hMovFilt==='Saída'?'':'<td>'+(r.Fornecedor||r.RT||'—')+'</td>')+
+      '<td style="max-width:160px"><div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.Cliente||r.Despesa||'—')+'</div>'+(r.Fornecedor&&r.Fornecedor!==(r.Cliente||'')?'<div style="font-size:10px;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.Fornecedor+'</div>':r.RT?'<div style="font-size:10px;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.RT+'</div>':'')+'</td>'+
       '<td style="white-space:nowrap">'+(r.Parcela||'—')+'</td>'+
       '<td style="font-weight:700;color:'+(isE?'#27ae60':'#c0392b')+'">'+fmt(r.Valor)+'</td>'+
-      '<td style="text-align:center"><button class="chk-btn pago-btn'+(isPago?' on':'')+'" data-ri="'+ri+'" title="Confirmar pagamento">'+(isPago?'&#10003;':'')+'</button></td>'+
-      '<td><select class="nf-sel" data-ri="'+ri+'" style="border:1px solid #e0e0e0;border-radius:6px;padding:3px 6px;font-size:11px;background:#fafafa;color:#555;width:100%"><option value="Não"'+(r['Nota Fiscal']==='Não'||!r['Nota Fiscal']?'selected':'')+'>Não</option><option value="Sim"'+(r['Nota Fiscal']==='Sim'?'selected':'')+'>Sim</option><option value="A Definir"'+(r['Nota Fiscal']==='A Definir'?'selected':'')+'>A Definir</option></select></td>'+
-      '<td style="text-align:center"><button class="chk-btn nf-btn'+(isNFem?' nf-on':'')+'" data-ri="'+ri+'" title="Confirmar NF emitida">'+(isNFem?'&#10003;':'')+'</button></td>'+
-      '<td><input class="obs-input obs-inp" type="text" value="'+obsVal+'" placeholder="Obs..." data-ri="'+ri+'"></td>'+
+      '<td style="min-width:108px">'+
+        '<div style="display:flex;flex-direction:column;gap:3px">'+
+          '<div style="display:flex;gap:3px;align-items:center">'+
+            '<button class="chk-btn pago-btn'+(isPago?' on':'')+'" data-ri="'+ri+'" title="'+(isPago?'Pago — clique para desfazer':'A pagar — clique para confirmar')+'" style="font-size:10px;padding:2px 7px;border-radius:5px;flex:1;white-space:nowrap">'+(isPago?'✓ Pago':'○ Pagar')+'</button>'+
+          '</div>'+
+          '<div style="display:flex;gap:3px;align-items:center">'+
+            '<select class="nf-sel" data-ri="'+ri+'" style="border:1px solid #e0e0e0;border-radius:5px;padding:2px 4px;font-size:10px;background:#fafafa;color:#555;flex:1">'+
+              '<option value="Não"'+(r['Nota Fiscal']==='Não'||!r['Nota Fiscal']?'selected':'')+'>NF: Não</option>'+
+              '<option value="Sim"'+(r['Nota Fiscal']==='Sim'?'selected':'')+'>NF: Sim</option>'+
+              '<option value="A Definir"'+(r['Nota Fiscal']==='A Definir'?'selected':'')+'>NF: A def.</option>'+
+            '</select>'+
+          '</div>'+
+          '<div style="display:flex;gap:3px;align-items:center">'+
+            '<button class="chk-btn nf-btn'+(isNFem?' nf-on':'')+'" data-ri="'+ri+'" title="'+(isNFem?'NF emitida':'NF não emitida')+'" style="font-size:10px;padding:2px 7px;border-radius:5px;flex:1;white-space:nowrap">'+(isNFem?'🧾 NF emitida':'○ NF emitida')+'</button>'+
+          '</div>'+
+        '</div>'+
+      '</td>'+
       '<td style="white-space:nowrap"><button class="ic-btn edit-btn" data-ri="'+ri+'" title="Editar">&#9998;</button><button class="ic-btn del-btn" data-ri="'+ri+'" title="Excluir" style="color:#c0392b">&#128465;</button></td>';
-    tr.querySelector('.obs-inp').addEventListener('change',function(){var ri=parseInt(this.dataset.ri);if(dados[ri])dados[ri].obs=this.value;salvarLocal();});
     tr.querySelector('.banco-sel').addEventListener('change',function(){var ri=parseInt(this.dataset.ri);if(dados[ri]){dados[ri].Banco=this.value;salvarLocal();}});
     tr.querySelector('.nf-sel').addEventListener('change',function(){var ri=parseInt(this.dataset.ri);if(dados[ri]){dados[ri]['Nota Fiscal']=this.value;salvarLocal();rendAlertas();}});
     tr.querySelector('.tipo-sel').addEventListener('change',function(){
@@ -1831,7 +1833,7 @@ function rendHist(){
     body.appendChild(tr);
   });
   // Update sort indicators
-  ['DataLanc','Data','Tipo','Banco','Origem','Cliente','RT','Parcela','Valor','Pago','NF','NFem','Obs'].forEach(function(c){
+  ['DataLanc','Data','Tipo','Banco','Origem','Nome','Parcela','Valor','Status'].forEach(function(c){
     var el=document.getElementById('h-th-'+c);if(!el)return;
     var arrow=el.querySelector('.sort-arrow');if(!arrow)return;
     arrow.textContent=(hSortCol===c)?(hSortDir===1?'↑':'↓'):'↕';
