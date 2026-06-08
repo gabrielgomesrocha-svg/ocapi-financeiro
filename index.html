@@ -920,7 +920,7 @@ function salvarLocal(){salvarFirebase();}
 function salvarFirebase(){
   if(!fbAuth||!fbAuth.currentUser){return;}
   var cfg={CLI_HON:CLI_HON,RT_EMPRESAS:RT_EMPRESAS,DESPESAS:DESPESAS,DESP_MAP:DESP_MAP,ORIGENS_ENTRADA:ORIGENS_ENTRADA,ORIGENS_SAIDA:ORIGENS_SAIDA,ORIGENS_SAIDA_TIPO:ORIGENS_SAIDA_TIPO,ALIASES:ALIASES};
-  var payload=JSON.parse(JSON.stringify({dados:dados,config:cfg,conciliacoes:conciliacoes,imp_historico:imp_historico,concilNomesIgnorados:concilNomesIgnorados,migrated:true,migrated_cat_v2:true}));
+  var payload=JSON.parse(JSON.stringify({dados:dados,config:cfg,conciliacoes:conciliacoes,imp_historico:imp_historico,concilNomesIgnorados:concilNomesIgnorados.map(function(g){return JSON.stringify(g);}),migrated:true,migrated_cat_v2:true}));
   var payloadBytes=new Blob([JSON.stringify(payload)]).size;
   var LIMIT=1000000;
   if(payloadBytes>LIMIT*0.9){
@@ -3120,7 +3120,7 @@ function mergeFirebaseData(fdata){
   }
   if(fdata&&fdata.conciliacoes){conciliacoes=fdata.conciliacoes;}
   if(fdata&&fdata.imp_historico){imp_historico=fdata.imp_historico;}
-  if(fdata&&fdata.concilNomesIgnorados){concilNomesIgnorados=fdata.concilNomesIgnorados;}
+  if(fdata&&fdata.concilNomesIgnorados){concilNomesIgnorados=fdata.concilNomesIgnorados.map(function(s){try{return typeof s==='string'?JSON.parse(s):s;}catch(e){return [s];}});}
   atualizarConcilBadge();
   // migração: renomear Honorário → Cliente
   var honIdx=ORIGENS_ENTRADA.indexOf('Honorário');
