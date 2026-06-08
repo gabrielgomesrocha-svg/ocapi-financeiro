@@ -2119,7 +2119,7 @@ function admIgnorarGrupo(grupo){
   salvarLocal();rendAdmin();
   showToast('Grupo ignorado — não aparecerá mais','#888',2500);
 }
-var aLabels={cli_hon:'Clientes',rt_emp:'RT',origens_e:'Origens de Entrada',origens_s:'Origens de Saída',aliases:'Aliases de Conciliação'};
+var aLabels={cli_hon:'Clientes',rt_emp:'RT',origens_e:'Origens de Entrada',origens_s:'Origens de Saída'};
 function rendAdmin(){
   var tabs=R('adm-tabs');if(!tabs)return;tabs.innerHTML='';
   Object.keys(aLabels).forEach(function(k){
@@ -4260,7 +4260,7 @@ function rendConcil(){
   // Tab switcher
   var tabBar=document.createElement('div');
   tabBar.style.cssText='display:flex;gap:8px;margin-bottom:24px';
-  [{k:'bancaria',l:'Conciliação Bancária'},{k:'nomes',l:'🔗 Conciliação de Nomes'}].forEach(function(t){
+  [{k:'bancaria',l:'Extrato Pendente'},{k:'nomes',l:'Nomes Duplicados'},{k:'aliases',l:'Nomes do Extrato → Sistema'}].forEach(function(t){
     var btn=document.createElement('div');btn.className='admin-tab'+(concilTab===t.k?' act':'');
     btn.textContent=t.l;btn.style.cursor='pointer';
     btn.addEventListener('click',function(){concilTab=t.k;rendConcil();});
@@ -4268,6 +4268,7 @@ function rendConcil(){
   });
   cont.appendChild(tabBar);
   if(concilTab==='nomes'){renderAdmConciliar(cont);return;}
+  if(concilTab==='aliases'){renderAdmAliases(cont);return;}
   var wrap=document.createElement('div');cont.appendChild(wrap);
   var pendentes = conciliacoes.filter(function(c){return c.status==='pendente';}).sort(function(a,b){
     var da=Math.abs(new Date(a.tx.data)-new Date(a.matchData&&a.matchData.Data?a.matchData.Data:'1970-01-01'));
