@@ -3343,6 +3343,13 @@ function impExtrairTransacoes(texto){
     var m = linha.match(/^([\w\sÀ-ú\/\-]+?):\s*"?(.+?)"?\s+(-?R?\$?\s*[\d\.]+,[\d]+)\s+(-?R?\$?\s*[\d\.]+,[\d]+)\s*$/i);
     // Fallback: "TIPO: descrição VALOR" (sem saldo separado)
     if(!m) m = linha.match(/^([\w\sÀ-ú\/\-]+?):\s*"?(.+?)"?\s+(-?R?\$?\s*[\d\.]+,[\d]+)\s*$/i);
+    // Fallback 2: sem dois-pontos ex: "DARF NUMERADO -R$ 524,45 R$ 13.096,80"
+    if(!m){
+      var mNc=linha.match(/^([A-Z][A-Z\s]+?)\s+(-R\$?\s*[\d\.]+,[\d]+)\s+(R\$?\s*[\d\.]+,[\d]+)\s*$/);
+      if(mNc&&!/saldo|sac|fale|ouvidoria|defici/i.test(mNc[1])){
+        m=[linha,mNc[1].trim(),mNc[1].trim(),mNc[2],mNc[3]];
+      }
+    }
 
     if(!m) return;
 
