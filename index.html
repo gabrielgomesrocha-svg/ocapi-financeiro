@@ -1351,7 +1351,7 @@ function rendDashUltimas(dd){
   var PER_PAGE=10;
   var body=R('dash-ult-body');if(!body)return;
   var cnt=R('dash-ult-count'),pager=R('dash-ult-pager');
-  var sorted=dd.slice().sort(function(a,b){var ta=a._ts||0;var tb=b._ts||0;if(ta!==tb)return tb-ta;return(b.Data||'').localeCompare(a.Data||'');});
+  var sorted=dd.slice().sort(function(a,b){var dl=(b.DataLanc||'').localeCompare(a.DataLanc||'');if(dl!==0)return dl;return(b.Data||'').localeCompare(a.Data||'');});
   var total=sorted.length,pages=Math.ceil(total/PER_PAGE)||1;
   if(dashUltPage>pages)dashUltPage=1;
   if(cnt)cnt.textContent=total+' lançamentos no período';
