@@ -3546,6 +3546,10 @@ function impAplicarSugestoes(){
         if(h.Cliente) tx.cliente = h.Cliente;
         if(h.RT) tx.rt = h.RT;
       }
+      // Verifica ALIASES — máxima prioridade (sobrepõe histórico)
+      var aliasNome = concilNomeNormalizado(tx.descricao);
+      var temAlias = aliasNome !== tx.descricao.toUpperCase().trim();
+      if(temAlias){ tx.origem='Cliente'; tx.cliente=aliasNome; }
     } else {
       // Saída: detecta categoria e despesa
       tx.categoria = impDetectCategoria(tx.descricao);
